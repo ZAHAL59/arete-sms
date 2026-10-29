@@ -7,18 +7,30 @@ import Modal from '../../components/ui/Modal';
 import Collapsible from '../../components/ui/Collapsible';
 import AttendancePanel from '../teacher/AttendancePanel';
 import { snapshot, staffAttToday, setStaffAttToday, onLeaveToday } from './bridge';
+import SubstituteModal from './SubstituteModal';
+import { uncovered } from './cover';
 import { classLabel, downloadCsv, TODAY, prettyDate } from './constants';
 
 const DOT = { P: ['#166534', '#F0FDF4'], A: ['#DC2626', '#FEF2F2'], L: ['#B45309', '#FFFBEB'] };
 
-export default function Attendance({ settings }) {
+export default function Attendance({ settings, p, api }) {
   const db = useStore(s => s.db); const attLog = useStore(s => s.attLog);
   const classes = useMemo(() => [...new Set(db.students.map(classLabel))].sort(), [db.students]);
   const [cls, setCls] = useState(classes[0] || '');
   const [open, setOpen] = useState(true); const [savedAt, setSavedAt] = useState(null);
   const [stuId, setStuId] = useState(db.students[0]?.id || '');
-  const [tick, setTick] = useState(0); const [alertOpen, setAlertOpen] = useState(false);
+  const [tick, setTick] = useState(0); const [alertOpen, setAlertOpen] = useState(false); const [subFor, setSubFor] = useState(null);
   const hr = useMemo(() => snapshot().hr, [tick]);
+
+  // Staff attendance is a draft until Save is pressed
+  const [draft, setDraft] = useState({}); const [staffSavedAt, setStaffSavedAt] = useState(null);
+  const savedVal = id => staffAttToday(hr, id);
+  const valOf = id => draft[id] ?? savedVal(id);
+  const changed = db.staff.filter(s => draft[s.id] !== undefined && draft[s.id] !== savedVal(s.id));
+  const sCount = { P: 0, L: 0, A: 0 }; db.staff.forEach(s => { const v = valOf(s.id); if (sCount[v] != null) sCount[v]++; });
+  const sUnmarked = db.staff.length - sCount.P - sCount.L - sCount.A;
+  function markAllStaff() { setDraft(d => { const n = { ...d }; db.staff.forEach(s => { if (!onLeaveToday(hr, s.id)) n[s.id] = 'P'; }); return n; }); }
+  function saveStaff() { changed.forEach(s => setStaffAttToday(s.id, draft[s.id])); setDraft({}); setTick(t => t + 1); setStaffSavedAt(new Date().toTimeString().slice(0, 5)); }
 
   const key = cls.replace(/\s+/g, '') + '-' + TODAY;
   const roster = db.students.filter(s => classLabel(s) === cls);
@@ -38,12 +50,37 @@ export default function Attendance({ settings }) {
 
   return (
     <div className="p-6">
-      <PageHeader title="Attendance" subtitle={new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-        actions={<>
-          <select value={cls} onChange={e => { setCls(e.target.value); setOpen(true); setSavedAt(null); }} className="px-2.5 py-1.5 border border-[#E4E4E4] rounded-[6px] text-[12.5px] outline-none focus:border-[#C8202E]">{classes.map(c => <option key={c}>{c}</option>)}</select>
-          <Button variant="outline" onClick={exportRoll}>⬇ Export Roll</Button>
-          <Button variant="outline" onClick={() => setAlertOpen(true)}>📱 Parent Alerts ({issues.length})</Button>
-        </>} />
+      <PageHeader title="Attendance" subtitle={new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} />
+
+      {/* ── Staff attendance first ── */}
+      <Collapsible defaultOpen className="mb-6" header={
+        <div className="flex items-center gap-3 flex-1"><span className="text-[14px] font-bold text-[#111]">👥 Staff Attendance — Today</span>
+          {changed.length > 0 ? <Badge variant="amber">{changed.length} unsaved change{changed.length > 1 ? 's' : ''}</Badge> : staffSavedAt ? <Badge variant="green">✓ Saved at {staffSavedAt}</Badge> : null}
+          <span className="ml-auto text-[12px] text-[#777]"><b className="text-[#166534]">{sCount.P}</b> present · <b className="text-[#B45309]">{sCount.L}</b> late · <b className="text-[#DC2626]">{sCount.A}</b> absent · {sUnmarked} not marked</span></div>}>
+        <div className="flex items-center gap-2 px-4 py-2.5 border-t border-[#E4E4E4] bg-[#F8F8F8]">
+          <Button size="sm" variant="outline" onClick={markAllStaff}>✓ All Present</Button>
+          <span className="text-[11.5px] text-[#AAA]">P = Present · L = Late · A = Absent</span>
+          <Button size="sm" className="ml-auto" disabled={!changed.length} onClick={saveStaff}>💾 Save Staff Attendance</Button>
+        </div>
+        <div className="divide-y divide-[#E4E4E4]">{db.staff.map(s => {
+          const v = valOf(s.id), leave = onLeaveToday(hr, s.id), dirty = draft[s.id] !== undefined && draft[s.id] !== savedVal(s.id);
+          return <div key={s.id} className={`flex items-center gap-3 px-4 py-2.5 ${v === 'P' ? 'bg-[#F6FEF9]' : v === 'A' ? 'bg-[#FFF5F5]' : v === 'L' ? 'bg-[#FFFDF0]' : ''}`}>
+            <div className="flex-1"><div className="text-[13px] font-semibold text-[#111]">{s.name}{dirty && <span className="ml-2 text-[10px] font-bold text-[#B45309]">● unsaved</span>}</div><div className="text-[11.5px] text-[#777]">{s.subj}</div></div>
+            {leave && <Badge variant="amber">On approved leave</Badge>}
+            {(v === 'A' || leave) && (() => { const left = uncovered(p.timetable, p.substitutions || [], s.name, TODAY).length, total = (p.substitutions || []).filter(x => x.date === TODAY && x.absent === s.name).length;
+              return <div className="flex items-center gap-2">{left > 0 ? <Badge variant="red">{left} period{left > 1 ? 's' : ''} need cover</Badge> : total > 0 ? <Badge variant="green">✓ Covered</Badge> : <span className="text-[11px] text-[#AAA]">No classes today</span>}
+                <Button size="sm" variant="outline" onClick={() => setSubFor(s.name)}>↻ Assign substitute</Button></div>; })()}
+            <div className="flex gap-1">{['P', 'L', 'A'].map(x => <button key={x} onClick={() => setDraft(d => ({ ...d, [s.id]: x }))} className="w-8 h-7 rounded-[5px] text-[11px] font-bold border-[1.5px] cursor-pointer" style={{ background: v === x ? DOT[x][0] : DOT[x][1], color: v === x ? '#fff' : DOT[x][0], borderColor: v === x ? DOT[x][0] : DOT[x][0] + '44' }}>{x}</button>)}</div></div>;
+        })}</div>
+      </Collapsible>
+
+      {/* ── Student attendance ── */}
+      <div className="flex items-center gap-2 flex-wrap mb-3">
+        <div className="text-[14px] font-bold text-[#111] mr-2">🎒 Student Attendance</div>
+        <select value={cls} onChange={e => { setCls(e.target.value); setOpen(true); setSavedAt(null); }} className="px-2.5 py-1.5 border border-[#E4E4E4] rounded-[6px] text-[12.5px] outline-none focus:border-[#C8202E]">{classes.map(c => <option key={c}>{c}</option>)}</select>
+        <Button variant="outline" onClick={exportRoll}>⬇ Export Roll</Button>
+        <Button variant="outline" onClick={() => setAlertOpen(true)}>📱 Parent Alerts ({issues.length})</Button>
+      </div>
 
       <div className="grid grid-cols-4 gap-3 mb-4">
         {[['Present', counts.P, '#166534'], ['Absent', counts.A, '#DC2626'], ['Late', counts.L, '#B45309'], ['Not marked', Math.max(0, roster.length - counts.P - counts.A - counts.L), '#AAA']].map(([l, v, c]) => (
@@ -62,14 +99,7 @@ export default function Attendance({ settings }) {
         </div>
       </Collapsible>
 
-      <Collapsible defaultOpen className="mt-3" header={<span className="text-[13.5px] font-bold text-[#111]">Staff Attendance Today</span>}>
-        <div className="divide-y divide-[#E4E4E4] border-t border-[#E4E4E4]">{db.staff.map(s => {
-          const st = staffAttToday(hr, s.id), leave = onLeaveToday(hr, s.id);
-          return <div key={s.id} className="flex items-center gap-3 px-4 py-2.5"><div className="flex-1"><div className="text-[13px] font-semibold text-[#111]">{s.name}</div><div className="text-[11.5px] text-[#777]">{s.subj}</div></div>
-            {leave && <Badge variant="amber">On approved leave</Badge>}
-            <div className="flex gap-1">{['P', 'L', 'A'].map(v => <button key={v} onClick={() => { setStaffAttToday(s.id, v); setTick(t => t + 1); }} className="w-8 h-7 rounded-[5px] text-[11px] font-bold border-[1.5px] cursor-pointer" style={{ background: st === v ? DOT[v][0] : DOT[v][1], color: st === v ? '#fff' : DOT[v][0], borderColor: st === v ? DOT[v][0] : DOT[v][0] + '44' }}>{v}</button>)}</div></div>;
-        })}</div>
-      </Collapsible>
+      {subFor && <SubstituteModal absent={subFor} date={TODAY} p={p} api={api} onClose={() => setSubFor(null)} />}
 
       <Modal open={alertOpen} onClose={() => setAlertOpen(false)} size="lg" title="Parent Alerts" subtitle="Absent and late students today — SMS sending is not connected yet, so copy the message"
         footer={<Button variant="outline" onClick={() => setAlertOpen(false)}>Close</Button>}>

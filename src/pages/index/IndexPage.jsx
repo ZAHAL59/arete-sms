@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import Logo from '../../components/Logo';
 
 const SECTIONS = [
   ['Administration', [
@@ -22,7 +23,7 @@ export default function IndexPage() {
   return (
     <div className="min-h-screen bg-white text-[#111]">
       <header className="px-6 h-14 border-b border-[#E4E4E4] flex items-center gap-2.5">
-        <div className="w-8 h-8 rounded-[7px] bg-[#C8202E] text-white font-bold text-[13px] flex items-center justify-center">A</div>
+        <Logo />
         <div><div className="text-[15px] font-extrabold tracking-tight leading-tight">Arete</div><div className="text-[10px] text-[#AAA] leading-tight">Model School · AY 2026–27</div></div>
       </header>
       <main className="max-w-5xl mx-auto px-6 py-12">

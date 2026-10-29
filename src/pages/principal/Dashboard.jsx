@@ -4,7 +4,8 @@ import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import Collapsible from '../../components/ui/Collapsible';
 import { getStudentDue } from '../finance/constants';
-import { snapshot, setLeaveStatus, setOutingStatus, docStatus, loanStatus } from './bridge';
+import { snapshot, setLeaveStatus, setOutingStatus, docStatus, loanStatus, staffAttOn, onLeaveOn } from './bridge';
+import { uncovered } from './cover';
 import { StudentPanel, EditStudentModal } from './Students';
 import { attendanceOf, fmt, fmtL, TODAY, prettyDate } from './constants';
 
@@ -24,7 +25,9 @@ export default function Dashboard({ p, go, openRoute }) {
   const pendingLeaves = hr.leaveRequests.filter(l => l.status === 'Pending');
   const pendingApps = (hr.applications || []).filter(a => a.hrStatus === 'Pending Review');
   const pendingOutings = hostel.outings.filter(o => o.status === 'Pending Approval');
-  const pending = pendingLeaves.length + pendingApps.length + pendingOutings.length + openComplaints.length;
+  // teachers away today (marked absent or on approved leave) whose classes have no substitute yet
+  const needCover = db.staff.map(s => ({ s, n: (staffAttOn(hr, s.id, TODAY) === 'A' || onLeaveOn(hr, s.id, TODAY)) ? uncovered(p.timetable, p.substitutions || [], s.name, TODAY).length : 0 })).filter(x => x.n > 0);
+  const pending = needCover.length + pendingLeaves.length + pendingApps.length + pendingOutings.length + openComplaints.length;
 
   const totalDue = db.students.reduce((a, s) => a + getStudentDue(s), 0);
   const collected = db.payments.filter(p => p.studentId).reduce((a, p) => a + p.amount, 0);
@@ -71,6 +74,7 @@ export default function Dashboard({ p, go, openRoute }) {
         <div className="border-t border-[#E4E4E4] divide-y divide-[#E4E4E4]">
           {!pending && <div className="px-4 py-3 text-[13px] text-[#AAA]">✓ No pending approvals — everything is up to date</div>}
           {openComplaints.slice(0, 3).map(c => <Row key={c.id} ic="C" col="#DC2626" text={c.subj.slice(0, 70)} sub={`Complaint · ${c.type}`} actions={<Button size="sm" variant="outline" onClick={() => openRoute('/campus')}>Open →</Button>} />)}
+          {needCover.map(({ s, n }) => <Row key={'cv' + s.id} ic="S" col="#B45309" text={`${s.name} is away — ${n} period${n > 1 ? 's' : ''} need a substitute`} sub="Classes today without cover" actions={<Button size="sm" onClick={() => go('attendance')}>Assign →</Button>} />)}
           {pendingLeaves.map(l => <Row key={l.id} ic="L" col="#C8202E" text={`${db.staff.find(s => s.id === l.staffId)?.name || l.staffId} — ${l.type} leave`} sub={`${l.from} to ${l.to || l.from} · ${l.reason || ''}`} actions={<><Button size="sm" onClick={() => { setLeaveStatus(l.id, 'Approved'); setTick(t => t + 1); }}>Approve</Button><Button size="sm" variant="outline" onClick={() => { setLeaveStatus(l.id, 'Rejected'); setTick(t => t + 1); }}>Reject</Button></>} />)}
           {pendingOutings.map(o => <Row key={o.id} ic="O" col="#B45309" text={`${o.stuName} — hostel outing (${o.purpose})`} sub={`${o.dep} to ${o.ret}`} actions={<><Button size="sm" onClick={() => { setOutingStatus(o.id, 'Approved'); setTick(t => t + 1); }}>Approve</Button><Button size="sm" variant="outline" onClick={() => { setOutingStatus(o.id, 'Rejected'); setTick(t => t + 1); }}>Reject</Button></>} />)}
           {pendingApps.slice(0, 3).map(a => <Row key={a.id} ic="H" col="#1A5FB4" text={`${a.name} — job application`} sub="HR review needed" actions={<Button size="sm" variant="outline" onClick={() => openRoute('/hr')}>Open →</Button>} />)}

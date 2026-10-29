@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import Logo from '../../components/Logo';
 import { Link } from 'react-router-dom';
 import { loadHR } from '../hr/constants';
 import ApplyModal from './ApplyModal';
@@ -17,7 +18,7 @@ export default function CareersPage() {
   return (
     <div className="min-h-screen bg-white text-[#111]">
       <header className="sticky top-0 z-40 bg-white border-b border-[#E4E4E4] px-6 h-14 flex items-center gap-5">
-        <div className="flex items-center gap-2.5"><div className="w-8 h-8 rounded-[7px] bg-[#C8202E] text-white font-bold text-[13px] flex items-center justify-center">A</div><span className="text-[15px] font-extrabold tracking-tight">Arete</span></div>
+        <div className="flex items-center gap-2.5"><Logo /><span className="text-[15px] font-extrabold tracking-tight">Arete</span></div>
         <nav className="hidden md:flex gap-1 ml-4">{[['openings-section', 'Current Openings'], ['why-section', 'Why Join Us'], ['process-section', 'Selection Process']].map(([id, l]) => <button key={id} onClick={() => go(id)} className="px-3 py-1.5 text-[13px] font-medium text-[#555] hover:text-[#C8202E] rounded-[6px] hover:bg-[#FEF4F4] cursor-pointer bg-none border-none">{l}</button>)}</nav>
         <div className="ml-auto flex items-center gap-4">
           <div className="relative"><button onClick={() => setMenu(m => !m)} className="px-3 py-1.5 text-[12.5px] font-semibold border border-[#E4E4E4] rounded-[6px] cursor-pointer bg-white hover:bg-[#F8F8F8]">All Portals ▾</button>

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Logo from '../../components/Logo';
 import Today from './Today';
 import Timetable from './Timetable';
 import MyClasses from './MyClasses';
@@ -33,7 +34,7 @@ export default function TeacherPortal() {
     <div className="flex h-screen overflow-hidden">
       <aside className="w-[240px] flex-shrink-0 bg-white border-r border-[#E4E4E4] flex flex-col overflow-y-auto">
         <div className="px-4 py-3.5 border-b border-[#E4E4E4] flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-[7px] bg-[#C8202E] flex items-center justify-center text-white font-bold text-[13px] flex-shrink-0">A</div>
+          <Logo />
           <div>
             <div className="text-[14px] font-bold text-[#111] leading-tight">Arete</div>
             <div className="text-[10px] text-[#AAA]">Teacher Portal</div>

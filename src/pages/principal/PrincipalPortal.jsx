@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Logo from '../../components/Logo';
 import { Link, useNavigate } from 'react-router-dom';
 import usePrincipal from './usePrincipal';
 import useAdmissions from '../admissions/useAdmissions';
@@ -55,8 +56,8 @@ export default function PrincipalPortal() {
 
   const body = {
     dashboard: <Dashboard p={p} go={setView} openRoute={navigate} />, admissions: <AdmissionsView />, students: <Students settings={p.settings} />,
-    timetable: <Timetable p={p} api={api} />, attendance: <Attendance settings={p.settings} />, learning: <Learning p={p} api={api} />,
-    staff: <Staff />, payroll: <Payroll p={p} api={api} />, fees: <Fees />, communication: <Communication p={p} api={api} />, health: <Health p={p} api={api} />, reports: <Reports p={p} />,
+    timetable: <Timetable p={p} api={api} />, attendance: <Attendance settings={p.settings} p={p} api={api} />, learning: <Learning p={p} api={api} />,
+    staff: <Staff p={p} api={api} />, payroll: <Payroll p={p} api={api} />, fees: <Fees />, communication: <Communication p={p} api={api} />, health: <Health p={p} api={api} />, reports: <Reports p={p} />,
   }[view];
 
   const Item = ({ id, label, icon }) => (
@@ -73,7 +74,7 @@ export default function PrincipalPortal() {
     <div className="flex h-screen overflow-hidden">
       <aside className="w-[240px] flex-shrink-0 bg-white border-r border-[#E4E4E4] flex flex-col overflow-y-auto">
         <div className="px-4 py-3.5 border-b border-[#E4E4E4] flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-[7px] bg-[#C8202E] flex items-center justify-center text-white font-bold text-[13px] flex-shrink-0">A</div>
+          <Logo />
           <div><div className="text-[14px] font-bold text-[#111] leading-tight">Arete</div><div className="text-[10px] text-[#AAA]">Principal Dashboard</div></div>
         </div>
         <nav className="flex-1 py-2 overflow-y-auto">

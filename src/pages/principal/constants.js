@@ -31,6 +31,7 @@ export const SEED = {
   ],
   slips: [{ id:'PS001', event:'Science Fair — Sep 22', responses:34, total:40, status:'Open' }],
   messages: [],
+  substitutions: [],   // { id, date, absent, cls, row, time, subject, sub }
   incidents: [
     { id:'IN001', stu:'Aisha Thomas', cls:'Grade 8', date:'2026-09-18', type:'Illness / Fever', issue:'Headache', action:'Rest given, parent informed', parent:'Yes — SMS sent' },
     { id:'IN002', stu:'Rahul Nair', cls:'Grade 3', date:'2026-09-16', type:'Injury', issue:'Knee abrasion', action:'First aid applied', parent:'Yes — Called' },

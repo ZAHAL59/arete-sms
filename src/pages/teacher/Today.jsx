@@ -4,9 +4,12 @@ import Collapsible from '../../components/ui/Collapsible';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import { TEACHER, PERIODS, TT, getNotices, getMyTraining, TODAY, getCurrentPeriod } from './constants';
+import { loadPrincipal } from '../principal/constants';
 
 export default function Today({ onNavigate }) {
   const DEMO_ANN = getNotices();
+  // classes the Principal has asked this teacher to cover today
+  const coverDuty = (loadPrincipal().substitutions || []).filter(x => x.date === TODAY && x.sub === TEACHER.name).sort((a, b) => a.row - b.row);
   const db     = useStore(s => s.db);
   const attLog = useStore(s => s.attLog);
   const cur    = getCurrentPeriod();
@@ -89,6 +92,15 @@ export default function Today({ onNavigate }) {
           }
         </div>
       </Collapsible>
+
+      {coverDuty.length > 0 && (
+        <Collapsible defaultOpen className="mb-3" header={<div className="flex items-center gap-2 flex-1"><span className="text-[13.5px] font-bold text-[#111]">↻ Cover duty today</span><Badge variant="amber">{coverDuty.length} period{coverDuty.length > 1 ? 's' : ''}</Badge></div>}>
+          <div className="divide-y divide-[#E4E4E4]">{coverDuty.map(c => (
+            <div key={c.id} className="flex items-center gap-3 px-4 py-3"><span className="bg-[#FFF1E0] text-[#B45309] text-[10px] font-bold px-2 py-1 rounded-[4px]">{c.time}</span>
+              <div className="flex-1"><div className="text-[13px] font-semibold">{c.cls} — {c.subject}</div><div className="text-[11px] text-[#AAA]">Covering for {c.absent}</div></div>
+              <Button size="sm" onClick={() => onNavigate('timetable')}>Mark attendance →</Button></div>))}</div>
+        </Collapsible>
+      )}
 
       {/* Latest Notice */}
       <Collapsible header={

@@ -22,6 +22,12 @@ export default function usePrincipal() {
     addExpense: e => update(d => { d.expenses.unshift({ ...e, id:uid('EX') }); return d; }),
     deleteExpense: id => update(d => { d.expenses = d.expenses.filter(x => x.id !== id); return d; }),
     setStatutory: list => update(d => { d.statutory = list; return d; }),
+    // substitute cover: replace every cover entry for this absent teacher on this date
+    saveCover: (date, absent, entries) => update(d => {
+      d.substitutions = (d.substitutions || []).filter(x => !(x.date === date && x.absent === absent));
+      entries.filter(e => e.sub).forEach(e => d.substitutions.push({ id: `${date}|${e.cls}|${e.row}`, date, absent, cls: e.cls, row: e.row, time: e.time, subject: e.subject, sub: e.sub }));
+      return d;
+    }),
     // timetable
     setTTCell: (cls, row, col, val) => update(d => { if (!d.timetable[cls]) d.timetable[cls] = blankTimetable(); d.timetable[cls].slots[row].cells[col] = val; return d; }),
     setTTMeta: (cls, f) => update(d => { if (!d.timetable[cls]) d.timetable[cls] = blankTimetable(); Object.assign(d.timetable[cls], f); return d; }),

@@ -9,3 +9,9 @@ html,body,#root{height:100%;font-family:'DM Sans',sans-serif;-webkit-font-smooth
 ::-webkit-scrollbar{width:5px;height:5px;}
 ::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:#CCC;border-radius:10px;}
+
+@media print {
+  aside, header, .no-print { display: none !important; }
+  .h-screen, main { height: auto !important; overflow: visible !important; }
+  body, #root { background: #fff !important; }
+}

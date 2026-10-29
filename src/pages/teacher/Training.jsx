@@ -1,48 +1,30 @@
 import { PageHeader } from '../../components/Layout';
 import Collapsible from '../../components/ui/Collapsible';
 import Badge from '../../components/ui/Badge';
-
-const TODAY = new Date().toISOString().slice(0,10);
-
-const SESSIONS = [
-  { id:'TR001', title:'NEP 2020 — Competency Based Education', date:'2026-08-15', trainer:'Dr. Anitha Raj', duration:'Full day', topics:['CBE Framework','Portfolio Learning','Outcome Mapping'] },
-  { id:'TR002', title:'SHAPE DLSS — Digital Classroom Tools', date:'2026-09-02', trainer:'Muhd Zahal', duration:'Half day', topics:['DLSS Overview','Resource Library','Lesson Planning'] },
-  { id:'TR003', title:'Classroom Differentiation Strategies', date:'2026-11-10', trainer:'Dr. Anitha Raj', duration:'Full day', topics:['Mixed-ability classes','Task scaffolding','Assessment variety'] },
-  { id:'TR004', title:'Google Classroom & Digital Tools', date:'2026-12-05', trainer:'Muhd Zahal', duration:'Half day', topics:['Google Classroom setup','Forms for assessment','Drive organisation'] },
-];
+import { getMyTraining, TODAY } from './constants';
 
 export default function Training() {
+  const sessions = getMyTraining();
   return (
     <div className="p-6">
-      <PageHeader title="Training Sessions" subtitle="Sessions scheduled by HR — attendance is recorded in your HR profile" />
-      <div className="space-y-2">
-        {SESSIONS.map((t, i) => {
-          const isPast = t.date < TODAY;
-          return (
-            <Collapsible key={t.id}
-              header={
-                <div className="flex items-center gap-3 flex-1">
-                  <div className={`w-9 h-9 rounded-[8px] flex items-center justify-center text-[16px] flex-shrink-0 ${isPast ? 'bg-[#F0FDF4]' : 'bg-[#FEF4F4]'}`}>
-                    {isPast ? '✅' : '📅'}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[13.5px] font-bold text-[#111]">{t.title}</div>
-                    <div className="text-[11.5px] text-[#AAA] mt-0.5">{t.date} · {t.duration} · {t.trainer}</div>
-                  </div>
-                  <Badge variant={isPast ? 'green' : 'blue'}>{isPast ? 'Attended' : 'Upcoming'}</Badge>
-                </div>
-              }
-            >
-              <div className="px-4 py-3 border-t border-[#E4E4E4]">
-                <div className="text-[10.5px] font-bold text-[#AAA] uppercase tracking-wider mb-2">Topics</div>
-                <div className="flex gap-2 flex-wrap">
-                  {t.topics.map(tp => <Badge key={tp} variant="purple">{tp}</Badge>)}
-                </div>
-              </div>
-            </Collapsible>
-          );
-        })}
-      </div>
+      <PageHeader title="Training Sessions" subtitle={`${sessions.length} session(s) you are invited to — scheduled by HR`} />
+      {!sessions.length && <div className="bg-white border border-[#E4E4E4] rounded-[10px] p-12 text-center text-[#AAA]">No training sessions</div>}
+      <div className="space-y-2">{sessions.map(t => {
+        const isPast = t.date < TODAY; const status = t.myStatus === 'present' ? ['Attended', 'green'] : t.myStatus === 'absent' ? ['Absent', 'red'] : isPast ? ['Not recorded', 'grey'] : ['Upcoming', 'blue'];
+        return (
+          <Collapsible key={t.id} header={
+            <div className="flex items-center gap-3 flex-1">
+              <div className={`w-9 h-9 rounded-[8px] flex items-center justify-center text-[16px] flex-shrink-0 ${isPast ? 'bg-[#F0FDF4]' : 'bg-[#FEF4F4]'}`}>{isPast ? '✅' : '📅'}</div>
+              <div className="flex-1"><div className="text-[13.5px] font-bold text-[#111]">{t.title}</div><div className="text-[11.5px] text-[#AAA] mt-0.5">{t.date}{t.time ? ' · ' + t.time : ''} · {t.duration} · {t.trainer || '—'}</div></div>
+              <Badge variant={status[1]}>{status[0]}</Badge>
+            </div>}>
+            <div className="px-4 py-3 border-t border-[#E4E4E4] space-y-2">
+              {(t.topics || []).length > 0 && <><div className="text-[10.5px] font-bold text-[#AAA] uppercase tracking-wider">Topics</div><div className="flex gap-2 flex-wrap">{t.topics.map(tp => <Badge key={tp} variant="purple">{tp}</Badge>)}</div></>}
+              <div className="text-[12.5px] text-[#555]">{t.mode && t.mode !== 'In-person' ? <>Online via <b>{t.platform}</b>{t.link && <> · <a href={t.link} target="_blank" rel="noreferrer" className="text-[#C8202E] underline">Join link</a></>}{t.meetingId && <> · ID {t.meetingId}</>}{t.passcode && <> · Passcode {t.passcode}</>}</> : <>Venue: <b>{t.venue || 'To be confirmed'}</b></>}</div>
+              {t.resources && <div className="text-[12.5px] text-[#555]"><b>Pre-reading:</b> {t.resources}</div>}
+            </div>
+          </Collapsible>);
+      })}</div>
     </div>
   );
 }

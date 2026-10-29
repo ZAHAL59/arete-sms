@@ -1,7 +1,7 @@
 import { NavLink, useLocation } from 'react-router-dom';
 
 const PORTALS = [
-  { path: '/',           label: 'Principal',   icon: '🏛', section: 'Administration' },
+  { path: '/principal',  label: 'Principal',   icon: '🏛', section: 'Administration' },
   { path: '/admissions', label: 'Admissions',  icon: '🎓', section: 'Administration' },
   { path: '/teacher',    label: 'Teacher',     icon: '🍎', section: 'Administration' },
   { path: '/hr',         label: 'HR & Staff',  icon: '👥', section: 'Administration' },

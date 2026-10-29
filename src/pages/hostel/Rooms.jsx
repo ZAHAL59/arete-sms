@@ -1,67 +1,107 @@
+import { useState } from 'react';
 import useStore from '../../store/useStore';
-import { HOSTEL_SEED } from '../../data/db';
 import { PageHeader } from '../../components/Layout';
 import Badge from '../../components/ui/Badge';
+import Button from '../../components/ui/Button';
+import Modal from '../../components/ui/Modal';
 import Collapsible from '../../components/ui/Collapsible';
+import { Kpi, Field, inputCls } from './ui';
 
-export default function Rooms() {
+export default function Rooms({ h, assignRoom, removeInmate }) {
   const db = useStore(s => s.db);
-  const boarders = db.students.filter(s => s.boarding);
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState('');
+  const [roomId, setRoomId] = useState('');
+
+  const rooms = h.rooms.filter(r => r.type !== 'Staff');
+  const cap = rooms.reduce((a, r) => a + r.capacity, 0);
+  const occ = rooms.reduce((a, r) => a + r.inmates.length, 0);
+  const full = rooms.filter(r => r.inmates.length >= r.capacity).length;
+
+  // Boarders in the student DB who are not yet in any room
+  const placed = new Set(h.rooms.flatMap(r => r.inmates));
+  const unplaced = db.students.filter(s => s.boarding && !placed.has(s.name));
+
+  function save() {
+    if (!name || !roomId) return;
+    assignRoom(roomId, name);
+    setOpen(false); setName(''); setRoomId('');
+  }
+
   return (
     <div className="p-6">
-      <PageHeader title="Room Allocation" subtitle={`${boarders.length} boarders · ${HOSTEL_SEED.rooms.length} rooms`} />
-      <div className="grid grid-cols-3 gap-3 mb-5">
-        {[
-          {label:'Total Boarders', value:boarders.length, color:'#C8202E'},
-          {label:'Rooms',          value:HOSTEL_SEED.rooms.length, color:'#1A5FB4'},
-          {label:'Avg Occupancy',  value:Math.round(boarders.length/HOSTEL_SEED.rooms.length*10)/10+'/room', color:'#166534'},
-        ].map(k => (
-          <div key={k.label} className="bg-white border border-[#E4E4E4] rounded-[10px] p-3.5 shadow-[0_1px_4px_rgba(0,0,0,.07)]" style={{borderLeft:`3px solid ${k.color}`}}>
-            <div className="text-[10.5px] font-semibold text-[#AAA] uppercase tracking-wider mb-1">{k.label}</div>
-            <div className="text-[22px] font-extrabold" style={{color:k.color}}>{k.value}</div>
-          </div>
-        ))}
+      <PageHeader title="Room Allocation" subtitle="Beds, occupancy and inmate placement"
+        actions={<Button onClick={() => setOpen(true)}>+ Allocate Room</Button>} />
+
+      <div className="grid grid-cols-4 gap-3 mb-5">
+        <Kpi label="Total Beds" value={cap} note={`Across ${rooms.length} rooms`} />
+        <Kpi label="Occupied" value={occ} note={`${cap ? Math.round(occ/cap*100) : 0}% occupancy`} color="#1A5FB4" />
+        <Kpi label="Available" value={cap - occ} note="Beds free" color="#166534" />
+        <Kpi label="Full Rooms" value={full} note="No vacancies" color="#DC2626" />
       </div>
-      {HOSTEL_SEED.rooms.map(r => {
-        const inmates = boarders.filter(s => r.inmates.includes(s.id));
-        const pct = Math.round(inmates.length/r.cap*100);
+
+      {unplaced.length > 0 && (
+        <div className="bg-[#FFFBEB] border border-[#FEF08A] rounded-[8px] p-3 mb-4 text-[12.5px] text-[#B45309]">
+          ⚠️ {unplaced.length} boarder{unplaced.length > 1 ? 's' : ''} without a room: <strong>{unplaced.map(s => s.name).join(', ')}</strong>
+        </div>
+      )}
+
+      {h.rooms.map(r => {
+        const isStaff = r.type === 'Staff';
+        const pct = Math.round(r.inmates.length / r.capacity * 100);
         return (
           <Collapsible key={r.id} className="mb-2"
             header={
               <div className="flex items-center gap-3 flex-1">
-                <div className="w-9 h-9 rounded-[8px] bg-gradient-to-br from-[#C8202E] to-[#9A1822] text-white text-[12px] font-bold flex items-center justify-center flex-shrink-0">
-                  {r.block}{r.num}
-                </div>
+                <div className="w-10 h-10 rounded-[8px] text-white text-[11px] font-bold flex items-center justify-center flex-shrink-0"
+                  style={{ background:'linear-gradient(135deg,#C8202E,#9A1822)' }}>{r.id}</div>
                 <div className="flex-1">
-                  <div className="text-[13.5px] font-bold text-[#111]">Block {r.block} · Room {r.num}</div>
-                  <div className="text-[11.5px] text-[#777]">{inmates.length}/{r.cap} occupied</div>
+                  <div className="text-[13.5px] font-bold text-[#111]">Room {r.id}</div>
+                  <div className="text-[11.5px] text-[#777]">{r.type} · {r.inmates.length}/{r.capacity} beds</div>
                 </div>
-                <div className="flex items-center gap-3">
+                {!isStaff && (
                   <div className="h-1.5 bg-[#E4E4E4] rounded-full w-16 overflow-hidden">
-                    <div className="h-full bg-[#C8202E] rounded-full" style={{width:`${pct}%`}}/>
+                    <div className="h-full bg-[#C8202E] rounded-full" style={{ width:`${pct}%` }} />
                   </div>
-                  <Badge variant={inmates.length===r.cap?'red':inmates.length===0?'grey':'green'}>
-                    {inmates.length===r.cap?'Full':inmates.length===0?'Empty':'Available'}
-                  </Badge>
-                </div>
+                )}
+                <Badge variant={isStaff ? 'grey' : r.inmates.length >= r.capacity ? 'red' : r.inmates.length === 0 ? 'grey' : 'green'}>
+                  {isStaff ? 'Staff' : r.inmates.length >= r.capacity ? 'Full' : r.inmates.length === 0 ? 'Empty' : 'Available'}
+                </Badge>
               </div>
-            }
-          >
-            {!inmates.length
-              ? <div className="p-4 text-center text-[#AAA] border-t border-[#E4E4E4]">No inmates assigned</div>
-              : <div className="divide-y divide-[#E4E4E4] border-t border-[#E4E4E4]">
-                  {inmates.map(s => (
-                    <div key={s.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-[#F8F8F8]">
-                      <span className="font-semibold text-[#111] flex-1">{s.name}</span>
-                      <span className="text-[12px] text-[#555]">{s.cls} {s.section}</span>
-                      <span className="text-[11.5px] font-mono text-[#AAA]">{s.parentPhone}</span>
+            }>
+            <div className="border-t border-[#E4E4E4]">
+              {!r.inmates.length
+                ? <div className="p-4 text-center text-[#AAA] text-[13px]">No inmates in this room</div>
+                : r.inmates.map(n => (
+                    <div key={n} className="flex items-center px-4 py-2.5 border-b border-[#E4E4E4] last:border-b-0 hover:bg-[#F8F8F8]">
+                      <span className="flex-1 text-[13px] font-semibold text-[#111]">{n}</span>
+                      {!isStaff && <button onClick={() => removeInmate(r.id, n)} className="text-[11px] font-semibold text-[#DC2626] underline cursor-pointer bg-none border-none">Remove</button>}
                     </div>
                   ))}
-                </div>
-            }
+            </div>
           </Collapsible>
         );
       })}
+
+      <Modal open={open} onClose={() => setOpen(false)} title="Allocate Room" subtitle="Moves the student if already placed elsewhere"
+        footer={<><Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button><Button onClick={save}>Allocate</Button></>}>
+        <div className="space-y-3">
+          <Field label="Student *">
+            <select value={name} onChange={e => setName(e.target.value)} className={inputCls}>
+              <option value="">— Select boarder —</option>
+              {db.students.filter(s => s.boarding).map(s => <option key={s.id} value={s.name}>{s.name} — {s.cls}</option>)}
+            </select>
+          </Field>
+          <Field label="Room *">
+            <select value={roomId} onChange={e => setRoomId(e.target.value)} className={inputCls}>
+              <option value="">— Select room —</option>
+              {rooms.map(r => <option key={r.id} value={r.id} disabled={r.inmates.length >= r.capacity}>
+                {r.id} ({r.type}) — {r.capacity - r.inmates.length} free
+              </option>)}
+            </select>
+          </Field>
+        </div>
+      </Modal>
     </div>
   );
 }

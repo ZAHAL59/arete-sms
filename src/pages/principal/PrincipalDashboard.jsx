@@ -21,7 +21,7 @@ export default function PrincipalDashboard() {
   const db = useStore(s => s.db);
   const totalFees = db.payments.reduce((a,p) => a+p.amount, 0);
   const boarders = db.students.filter(s => s.boarding).length;
-  const openComplaints = CAMPUS_SEED.complaints.filter(c => c.status === 'Open').length;
+  const openComplaints = (db.complaints || []).filter(c => c.status === 'Open').length;
   const pipeline = ADMISSIONS_SEED.filter(a => !['Enrolled','Rejected'].includes(a.stage)).length;
 
   return (

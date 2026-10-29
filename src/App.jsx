@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import PrincipalDashboard from './pages/principal/PrincipalDashboard';
+import IndexPage          from './pages/index/IndexPage';
+import PrincipalPortal    from './pages/principal/PrincipalPortal';
 import TeacherPortal      from './pages/teacher/TeacherPortal';
 import AdmissionsPortal   from './pages/admissions/AdmissionsPortal';
 import HRPortal           from './pages/hr/HRPortal';
@@ -14,7 +15,8 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/"           element={<PrincipalDashboard />} />
+        <Route path="/"           element={<IndexPage />} />
+        <Route path="/principal"  element={<PrincipalPortal />} />
         <Route path="/teacher"    element={<TeacherPortal />} />
         <Route path="/admissions" element={<AdmissionsPortal />} />
         <Route path="/hr"         element={<HRPortal />} />

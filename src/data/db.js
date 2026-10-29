@@ -15,10 +15,12 @@ export const SEED = {
     {id:'T005',name:'Ms. Rani S.',   subj:'Malayalam',    joined:'2022-06-01',phone:'+91 94470 91005',salary:46000,status:'Active',classes:['Grade 6 A','Grade 7 A','Grade 8 A']},
   ],
   routes: [
-    {id:'R001',name:'Route 1 — Koyilandy',  vehicle:'KL 11 AB 1234',driver:'Rajan P.',    phone:'+91 94470 12345',dept:'07:05',arr:'07:45',status:'Active'},
-    {id:'R002',name:'Route 2 — Vatakara',   vehicle:'KL 11 CD 5678',driver:'Suresh Kumar',phone:'+91 94471 56789',dept:'07:15',arr:'07:55',status:'Active'},
-    {id:'R003',name:'Route 3 — Peringathur',vehicle:'KL 11 EF 9012',driver:'Krishnan K.', phone:'+91 94472 98765',dept:'07:20',arr:'08:00',status:'Active'},
+    {id:'R001',name:'Route 1 — KL Bus',     vehicle:'KL 11 AB 1234',type:'Bus (52 seats)',driver:'Rajan P.',    phone:'+91 94470 12345',dept:'07:05',arr:'07:45',status:'Active'},
+    {id:'R002',name:'Route 2 — Koyilandy',  vehicle:'KL 11 CD 5678',type:'Bus (52 seats)',driver:'Suresh Kumar',phone:'+91 94471 56789',dept:'07:15',arr:'07:55',status:'Active'},
+    {id:'R003',name:'Route 3 — Vatakara',   vehicle:'KL 11 EF 9012',type:'Van (15 seats)',driver:'Krishnan K.', phone:'+91 94472 98765',dept:'07:20',arr:'08:00',status:'Active'},
+    {id:'R004',name:'Route 4 — Peringathur',vehicle:'KL 11 GH 3456',type:'Bus (52 seats)',driver:'Sunil M.',    phone:'+91 94473 11111',dept:'07:00',arr:'07:50',status:'Active'},
   ],
+
   payments: [
     {id:'RC-001',studentId:'S001',category:'Term Fee',  amount:24500,date:'2026-10-14',mode:'Online'},
     {id:'RC-002',studentId:'S002',category:'Term Fee',  amount:24500,date:'2026-10-13',mode:'Cash'},
@@ -29,6 +31,16 @@ export const SEED = {
   attendance: {},
   sessionLogs: [],
   notes: [],
+  // Complaints are shared so the Principal dashboard sees campus complaints
+  complaints: [
+    {id:'CP001',date:'2026-10-10',who:'Parent - Mrs. Suma R.',type:'Academic', subj:'Assignment load too heavy for Grade 5 - children unable to complete independently',action:'Referred to HOD Primary - discussion scheduled 16 Oct',status:'Open'},
+    {id:'CP002',date:'2026-10-12',who:'Staff - Mr. Arun P.',  type:'Facility', subj:'Projector in Room 12 not functioning for 5 days - affecting lessons',action:'IT team notified 12 Oct · awaiting part delivery',status:'Open'},
+    {id:'CP003',date:'2026-10-14',who:'Parent - Mr. Suresh K.',type:'Transport',subj:'Morning pickup at Vatakara consistently 10 min late this week',action:'Driver Krishnan K. spoken to · Route timing under review',status:'Open'},
+    {id:'CP-S01',date:'2026-10-06',who:'Parent',type:'Facility',subj:'Canteen menu - no vegetarian hot option',action:'Menu updated',status:'Resolved',resolvedOn:'2026-10-08'},
+    {id:'CP-S02',date:'2026-10-08',who:'Staff', type:'Academic',subj:'Library noise levels during study periods',action:'Silent hours introduced',status:'Resolved',resolvedOn:'2026-10-09'},
+    {id:'CP-S03',date:'2026-10-02',who:'Parent',type:'Transport',subj:'Bus air-conditioning not working',action:'Repaired',status:'Resolved',resolvedOn:'2026-10-05'},
+    {id:'CP-S04',date:'2026-10-09',who:'Staff', type:'Facility',subj:'Washroom taps not working - Block B',action:'Plumber fixed',status:'Resolved',resolvedOn:'2026-10-10'},
+  ],
 };
 
 const KEY = 'ARETE_DB_v1';

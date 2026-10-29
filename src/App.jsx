@@ -1,30 +1,28 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import TeacherPortal from './pages/teacher/TeacherPortal';
+import PrincipalDashboard from './pages/principal/PrincipalDashboard';
+import TeacherPortal      from './pages/teacher/TeacherPortal';
+import AdmissionsPortal   from './pages/admissions/AdmissionsPortal';
+import HRPortal           from './pages/hr/HRPortal';
+import FinancePortal      from './pages/finance/FinancePortal';
+import HostelPortal       from './pages/hostel/HostelPortal';
+import TransportPortal    from './pages/transport/TransportPortal';
+import CampusPortal       from './pages/campus/CampusPortal';
+import CareersPage        from './pages/careers/CareersPage';
 import './index.css';
-
-function ComingSoon({ name, icon }) {
-  return (
-    <div className="flex items-center justify-center h-screen bg-[#F8F8F8] flex-col gap-3">
-      <div className="text-[48px]">{icon}</div>
-      <div className="text-[18px] font-bold text-[#111]">{name}</div>
-      <div className="text-[13px] text-[#AAA]">Portal coming soon</div>
-    </div>
-  );
-}
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/teacher" element={<TeacherPortal />} />
-        <Route path="/"        element={<ComingSoon name="Principal Dashboard" icon="🏛" />} />
-        <Route path="/admissions" element={<ComingSoon name="Admissions" icon="🎓" />} />
-        <Route path="/hr"      element={<ComingSoon name="HR & Staff" icon="👥" />} />
-        <Route path="/finance" element={<ComingSoon name="Finance & Payroll" icon="₹" />} />
-        <Route path="/hostel"  element={<ComingSoon name="Hostel" icon="🏠" />} />
-        <Route path="/transport" element={<ComingSoon name="Transport" icon="🚌" />} />
-        <Route path="/campus"  element={<ComingSoon name="Campus" icon="🏫" />} />
-        <Route path="/careers" element={<ComingSoon name="Careers" icon="📋" />} />
+        <Route path="/"           element={<PrincipalDashboard />} />
+        <Route path="/teacher"    element={<TeacherPortal />} />
+        <Route path="/admissions" element={<AdmissionsPortal />} />
+        <Route path="/hr"         element={<HRPortal />} />
+        <Route path="/finance"    element={<FinancePortal />} />
+        <Route path="/hostel"     element={<HostelPortal />} />
+        <Route path="/transport"  element={<TransportPortal />} />
+        <Route path="/campus"     element={<CampusPortal />} />
+        <Route path="/careers"    element={<CareersPage />} />
       </Routes>
     </BrowserRouter>
   );

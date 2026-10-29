@@ -35,3 +35,114 @@ const KEY = 'ARETE_DB_v1';
 export const loadDB  = () => { try { const r=localStorage.getItem(KEY); if(r) return {...SEED,...JSON.parse(r)}; } catch{} return JSON.parse(JSON.stringify(SEED)); };
 export const saveDB  = db => { try { localStorage.setItem(KEY,JSON.stringify(db)); } catch{} };
 export const resetDB = () => { localStorage.removeItem(KEY); window.location.reload(); };
+
+// ── Admissions seed data ────────────────────────────────────────
+export const ADM_STAGES = ['Enquiry','Application','Assessment','Interview','Offer','Enrolled','Rejected'];
+
+export const ADMISSIONS_SEED = [
+  {id:'ADM001',name:'Aisha Rahman',     dob:'2013-04-12',grade:'Grade 7',section:'',parentName:'Rahman K.',parentPhone:'+91 94470 31001',email:'rahman@email.com',address:'Koyilandy',stage:'Enrolled',  assignedTo:'MZ',date:'2026-08-01',notes:'Strong in sciences',diet:'Non-Vegetarian',boarding:false,busRoute:'R001',docs:{birth:true,transfer:true,photo:true,medical:false}},
+  {id:'ADM002',name:'Rohan Vijay',      dob:'2014-07-22',grade:'Grade 6',section:'',parentName:'Vijay R.',  parentPhone:'+91 94471 32002',email:'vijay@email.com', address:'Vatakara', stage:'Interview',  assignedTo:'MZ',date:'2026-09-15',notes:'Needs assessment for SEN',diet:'Vegetarian',  boarding:false,busRoute:'',   docs:{birth:true,transfer:false,photo:true,medical:false}},
+  {id:'ADM003',name:'Meera Thomas',     dob:'2012-11-08',grade:'Grade 8',section:'',parentName:'Thomas C.', parentPhone:'+91 94472 33003',email:'thomas@email.com',address:'Peringathur',stage:'Offer',     assignedTo:'MZ',date:'2026-09-20',notes:'Excellent academics',diet:'Non-Vegetarian',boarding:true, busRoute:'',   docs:{birth:true,transfer:true, photo:true,medical:true}},
+  {id:'ADM004',name:'Aryan Nair',       dob:'2015-02-14',grade:'Grade 5',section:'',parentName:'Nair S.',   parentPhone:'+91 94473 34004',email:'nair@email.com',  address:'Koyilandy',stage:'Assessment', assignedTo:'MZ',date:'2026-10-01',notes:'',                  diet:'Vegetarian',  boarding:false,busRoute:'R002',docs:{birth:true,transfer:false,photo:false,medical:false}},
+  {id:'ADM005',name:'Fatima Zahra',     dob:'2013-08-30',grade:'Grade 7',section:'',parentName:'Zahra M.',  parentPhone:'+91 94474 35005',email:'zahra@email.com', address:'Vatakara', stage:'Application',assignedTo:'',  date:'2026-10-10',notes:'',                  diet:'Non-Vegetarian',boarding:false,busRoute:'',   docs:{birth:false,transfer:false,photo:true,medical:false}},
+  {id:'ADM006',name:'Dev Krishnan',     dob:'2011-05-19',grade:'Grade 9',section:'',parentName:'Krishnan D.',parentPhone:'+91 94475 36006',email:'dev@email.com',  address:'Koyilandy',stage:'Enquiry',   assignedTo:'',  date:'2026-10-18',notes:'',                  diet:'Vegetarian',  boarding:false,busRoute:'',   docs:{birth:false,transfer:false,photo:false,medical:false}},
+  {id:'ADM007',name:'Lina Mathew',      dob:'2014-03-25',grade:'Grade 6',section:'',parentName:'Mathew P.', parentPhone:'+91 94476 37007',email:'mathew@email.com',address:'Peringathur',stage:'Rejected', assignedTo:'MZ',date:'2026-09-05',notes:'Capacity full for grade',diet:'Non-Vegetarian',boarding:false,busRoute:'',   docs:{birth:true,transfer:true, photo:true,medical:false}},
+  {id:'ADM008',name:'Siddharth Kumar',  dob:'2012-09-11',grade:'Grade 8',section:'',parentName:'Kumar R.',  parentPhone:'+91 94477 38008',email:'kumar@email.com', address:'Vatakara', stage:'Interview',  assignedTo:'MZ',date:'2026-10-05',notes:'Strong in maths',    diet:'Non-Vegetarian',boarding:true, busRoute:'',   docs:{birth:true,transfer:true, photo:true,medical:true}},
+];
+
+// ── HR / Staff seed ──────────────────────────────────────────
+export const HR_SEED = {
+  vacancies: [
+    {id:'V001',subj:'Mathematics', qual:'M.Sc Maths + B.Ed',exp:'3+ years',posted:'2026-09-01',status:'Active'},
+    {id:'V002',subj:'English',     qual:'MA English + B.Ed', exp:'2+ years',posted:'2026-09-10',status:'Active'},
+  ],
+  candidates: [
+    {id:'C001',name:'Priya Suresh',vacId:'V001',qual:'M.Sc Maths, B.Ed',exp:'5 yrs',score:88,status:'Shortlisted', interview:'2026-10-05'},
+    {id:'C002',name:'Anoop Varma', vacId:'V001',qual:'M.Sc Maths, B.Ed',exp:'3 yrs',score:76,status:'Shortlisted', interview:'2026-10-05'},
+    {id:'C003',name:'Reshma K.',   vacId:'V002',qual:'MA English, B.Ed', exp:'6 yrs',score:91,status:'Recommended',interview:'2026-09-28'},
+  ],
+  training: [
+    {id:'TR001',title:'NEP 2020 — Competency Based Education',date:'2026-08-15',trainer:'Dr. Anitha Raj',duration:'Full day',topics:['CBE Framework','Portfolio Learning','Outcome Mapping'],attendees:['T001','T002','T003','T004','T005']},
+    {id:'TR002',title:'SHAPE DLSS — Digital Classroom Tools',  date:'2026-09-02',trainer:'Muhd Zahal',    duration:'Half day',topics:['DLSS Overview','Resource Library','Lesson Planning'],      attendees:['T001','T002','T003','T004']},
+    {id:'TR003',title:'Classroom Differentiation Strategies',  date:'2026-11-10',trainer:'Dr. Anitha Raj',duration:'Full day',topics:['Mixed-ability classes','Task scaffolding'],               attendees:['T001','T002','T003']},
+  ],
+  leaveRequests: [
+    {id:'LR001',staffId:'T002',staffName:'Ms. Divya K.',type:'Medical',from:'2026-10-20',to:'2026-10-22',days:3,status:'Pending',reason:'Medical appointment'},
+    {id:'LR002',staffId:'T004',staffName:'Mr. Arun P.', type:'Casual', from:'2026-10-28',to:'2026-10-28',days:1,status:'Approved',reason:'Family function'},
+  ],
+};
+
+// ── Finance seed ─────────────────────────────────────────────
+export const FINANCE_SEED = {
+  feeStructure: {
+    'Grade 6':  {t1:10000,t2:10000,t3:10000,transport:6500,hostel:42000,activity:3000},
+    'Grade 7':  {t1:10000,t2:10000,t3:10000,transport:6500,hostel:42000,activity:3000},
+    'Grade 8':  {t1:11000,t2:11000,t3:11000,transport:6500,hostel:42000,activity:3000},
+    'Grade 9':  {t1:12000,t2:12000,t3:12000,transport:7000,hostel:42000,activity:3500},
+    'Grade 10': {t1:12000,t2:12000,t3:12000,transport:7000,hostel:42000,activity:3500},
+  },
+  expenses: [
+    {id:'EX001',cat:'Salaries',      amount:2400000,date:'2026-10-01',desc:'October staff salaries'},
+    {id:'EX002',cat:'Transport',     amount:180000, date:'2026-10-05',desc:'Bus fuel & maintenance'},
+    {id:'EX003',cat:'Utilities',     amount:45000,  date:'2026-10-08',desc:'Electricity & water'},
+    {id:'EX004',cat:'Maintenance',   amount:28000,  date:'2026-10-12',desc:'Building repairs'},
+    {id:'EX005',cat:'Library',       amount:15000,  date:'2026-10-15',desc:'New books purchase'},
+  ],
+  budget: [
+    {cat:'Teacher Salaries',     budgeted:18000000,actual:18000000},
+    {cat:'Non-Teaching Salaries',budgeted:6000000, actual:5800000},
+    {cat:'Transport',            budgeted:4600000, actual:4820000},
+    {cat:'Infrastructure',       budgeted:2500000, actual:1900000},
+    {cat:'Hostel & Mess',        budgeted:1600000, actual:1480000},
+    {cat:'Library & Materials',  budgeted:450000,  actual:320000},
+  ],
+};
+
+// ── Hostel seed ───────────────────────────────────────────────
+export const HOSTEL_SEED = {
+  rooms: [
+    {id:'RM-A01',block:'A',num:1, cap:4,inmates:['S003','S006']},
+    {id:'RM-A02',block:'A',num:2, cap:4,inmates:[]},
+    {id:'RM-A03',block:'A',num:3, cap:4,inmates:[]},
+    {id:'RM-B01',block:'B',num:1, cap:4,inmates:[]},
+  ],
+  messMenu: [
+    {day:'Monday',   breakfast:'Idli + Sambar',lunch:'Rice + Dal + Sabzi',dinner:'Chapati + Curry'},
+    {day:'Tuesday',  breakfast:'Dosa + Chutney',lunch:'Rice + Fish Curry',dinner:'Rice + Dal'},
+    {day:'Wednesday',breakfast:'Puttu + Kadala',lunch:'Rice + Egg Curry', dinner:'Chapati + Paneer'},
+    {day:'Thursday', breakfast:'Appam + Stew',  lunch:'Rice + Chicken',   dinner:'Rice + Sambar'},
+    {day:'Friday',   breakfast:'Idiyappam',      lunch:'Rice + Dal',       dinner:'Chapati + Mixed Veg'},
+    {day:'Saturday', breakfast:'Paratha + Pickle',lunch:'Biryani',         dinner:'Rice + Curry'},
+    {day:'Sunday',   breakfast:'Poori + Bhaji',  lunch:'Special Rice',     dinner:'Chapati + Dal'},
+  ],
+  incidents: [
+    {id:'INC001',date:'2026-10-12',student:'Arjun Menon',type:'Minor',desc:'Minor scuffle in corridor — resolved',action:'Counselled',status:'Closed'},
+  ],
+  stock: [
+    {item:'Rice (Ponni)',  unit:'kg',qty:280,max:400,low:80},
+    {item:'Cooking Oil',  unit:'L', qty:38, max:60, low:15},
+    {item:'Dal (Mixed)',  unit:'kg',qty:45, max:80, low:15},
+    {item:'Vegetables',   unit:'kg',qty:35, max:80, low:20},
+    {item:'Eggs',         unit:'doz',qty:18,max:40, low:10},
+  ],
+};
+
+// ── Events & Complaints (Campus) ─────────────────────────────
+export const CAMPUS_SEED = {
+  events: [
+    {id:'EV001',title:'Parent-Teacher Meeting',type:'Parent Meeting',date:'2026-11-08',time:'10:00',venue:'Main Hall',seats:120,alloc:98},
+    {id:'EV002',title:'Monthly Staff Meeting',  type:'Staff Meeting', date:'2026-10-25',time:'16:00',venue:'Staff Room',seats:40, alloc:38},
+    {id:'EV003',title:'Annual Science Fair',    type:'School Event',  date:'2026-11-15',time:'09:00',venue:'Grounds',   seats:600,alloc:540},
+  ],
+  complaints: [
+    {id:'CP001',date:'2026-10-10',from:'Parent',who:'Mrs. Suma R.',type:'Academic',  subj:'Assignment load too heavy',action:'Referred to HOD',status:'Open'},
+    {id:'CP002',date:'2026-10-08',from:'Parent',who:'Mr. Rahul',   type:'Transport', subj:'Bus arriving late',         action:'Driver counselled',status:'Resolved'},
+    {id:'CP003',date:'2026-10-14',from:'Staff', who:'Mr. Arun P.', type:'Facility',  subj:'Projector not working',     action:'IT notified',status:'Open'},
+  ],
+  inventory: [
+    {id:'INV001',name:'Laptops',         cat:'IT',       total:42,working:39,repair:3},
+    {id:'INV002',name:'Projectors',      cat:'IT',       total:18,working:16,repair:2},
+    {id:'INV003',name:'Science Lab Sets',cat:'Lab',      total:12,working:12,repair:0},
+    {id:'INV004',name:'Student Desks',   cat:'Furniture',total:420,working:414,repair:6},
+  ],
+};

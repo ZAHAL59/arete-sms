@@ -7,7 +7,7 @@ import ApplicationDetailModal from './modals/ApplicationDetailModal';
 
 const PIPELINE_STAGES = [...JOURNEY_STAGES.map(s=>s.label), 'Waitlisted'];
 
-export default function Pipeline({ A, onNavigate }) {
+export default function Pipeline({ A, onNavigate, hideNew = false }) {
   const admissions = A.admissions;
   const [sel, setSel] = useState(null);
   const active   = admissions.filter(a => !['Enrolled'].includes(a.stage));
@@ -16,7 +16,7 @@ export default function Pipeline({ A, onNavigate }) {
   return (
     <div className="p-6">
       <PageHeader title="Admissions Pipeline" subtitle={`AY 2026–27 · ${admissions.length} total applications`}
-        actions={<Button onClick={() => onNavigate('new')}>+ New Application</Button>}
+        actions={!hideNew && <Button onClick={() => onNavigate('new')}>+ New Application</Button>}
       />
 
       {/* KPI strip */}

@@ -3,6 +3,9 @@ import { PageHeader } from '../../components/Layout';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
 import Collapsible from '../../components/ui/Collapsible';
+import Badge from '../../components/ui/Badge';
+import useExpand from '../../components/ui/useExpand';
+import ExpandControls from '../../components/ui/ExpandControls';
 import { Kpi, Field, inputCls, Th } from '../../components/ui/Kit';
 import { ASSET_CATS, ASSET_ICONS, fmt } from './constants';
 
@@ -13,6 +16,9 @@ export default function Inventory({ c, addAsset, editAsset }) {
   const [action, setAction] = useState('');
   const [nf, setNf] = useState({ name:'', cat:ASSET_CATS[0], total:'', value:'', note:'' });
 
+  const cats = [...new Set([...ASSET_CATS.filter(x => c.inventory.some(i => i.cat === x)), ...c.inventory.map(i => i.cat)])];
+  const ex = useExpand(cats.filter(x => c.inventory.some(i => i.cat === x && i.repair > 0)).map(x => 'c:' + x));   // categories with repairs open
+  const allIds = [...cats.map(x => 'c:' + x), 'log'];
   const totalUnits = c.inventory.reduce((a, i) => a + i.total, 0);
   const repair = c.inventory.reduce((a, i) => a + i.repair, 0);
   const value = c.inventory.reduce((a, i) => a + i.value, 0);
@@ -31,7 +37,7 @@ export default function Inventory({ c, addAsset, editAsset }) {
 
   return (
     <div className="p-6">
-      <PageHeader title="Inventory" subtitle="School assets and equipment" actions={<Button onClick={() => setAddOpen(true)}>+ Add Asset</Button>} />
+      <PageHeader title="Inventory" subtitle="School assets and equipment — grouped by category" actions={<><ExpandControls ex={ex} ids={allIds} /><Button onClick={() => setAddOpen(true)}>+ Add Asset</Button></>} />
       <div className="grid grid-cols-4 gap-3 mb-5">
         <Kpi label="Asset Types" value={c.inventory.length} note="Tracked categories" />
         <Kpi label="Total Units" value={totalUnits.toLocaleString('en-IN')} note="All assets" color="#1A5FB4" />
@@ -39,9 +45,14 @@ export default function Inventory({ c, addAsset, editAsset }) {
         <Kpi label="Total Value" value={fmt(value)} note="Replacement value" color="#166534" />
       </div>
 
-      <div className="grid grid-cols-3 gap-3 mb-5">
-        {c.inventory.map(i => (
-          <div key={i.id} className="bg-white border border-[#E4E4E4] rounded-[10px] p-4 shadow-[0_1px_4px_rgba(0,0,0,.07)]">
+      {cats.map(cat => {
+        const items = c.inventory.filter(i => i.cat === cat), units = items.reduce((a, i) => a + i.total, 0), rep = items.reduce((a, i) => a + i.repair, 0);
+        return (
+          <Collapsible key={cat} className="mb-3" open={ex.isOpen('c:' + cat)} onToggle={() => ex.toggle('c:' + cat)}
+            header={<div className="flex items-center gap-2.5"><span className="text-[18px]">{items[0]?.icon}</span><span className="text-[13.5px] font-bold text-[#111]">{cat}</span><Badge variant="grey">{items.length} type{items.length === 1 ? '' : 's'}</Badge><span className="text-[12px] text-[#777]">{units.toLocaleString('en-IN')} units</span>{rep > 0 && <Badge variant="red">⚠ {rep} under repair</Badge>}</div>}>
+            <div className="grid grid-cols-3 gap-3 p-3 border-t border-[#E4E4E4]">
+              {items.map(i => (
+                <div key={i.id} className="bg-white border border-[#E4E4E4] rounded-[10px] p-4 shadow-[0_1px_4px_rgba(0,0,0,.07)]">
             <div className="flex justify-between items-start mb-1"><div className="text-[24px]">{i.icon}</div><Button size="sm" variant="outline" onClick={() => openEdit(i)}>✎ Edit</Button></div>
             <div className="text-[14px] font-bold text-[#111]">{i.name}</div>
             <div className="text-[11.5px] text-[#AAA] mb-3">{i.cat}</div>
@@ -53,10 +64,12 @@ export default function Inventory({ c, addAsset, editAsset }) {
             {i.repair > 0 && <div className="text-[11px] text-[#DC2626] bg-[#FEF2F2] rounded-[4px] px-2 py-1 mt-3">⚠ {i.repair} unit{i.repair > 1 ? 's' : ''} need{i.repair === 1 ? 's' : ''} repair</div>}
             {i.note && <div className="text-[11px] text-[#777] mt-2">{i.note}</div>}
           </div>
-        ))}
-      </div>
+              ))}
+            </div>
+          </Collapsible>);
+      })}
 
-      <Collapsible header={<span className="text-[13.5px] font-bold text-[#111]">🧾 Activity Log</span>}>
+      <Collapsible open={ex.isOpen('log')} onToggle={() => ex.toggle('log')} header={<span className="text-[13.5px] font-bold text-[#111]">🧾 Activity Log</span>}>
         <table className="w-full border-collapse text-[13px] border-t border-[#E4E4E4]">
           <thead><tr><Th>Date</Th><Th>Asset</Th><Th>Action</Th><Th>Qty</Th><Th>By</Th></tr></thead>
           <tbody>{c.invLog.slice(0, 15).map((l, i) => (

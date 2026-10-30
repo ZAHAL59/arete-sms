@@ -5,6 +5,8 @@ import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
 import Collapsible from '../../components/ui/Collapsible';
+import useExpand from '../../components/ui/useExpand';
+import ExpandControls from '../../components/ui/ExpandControls';
 import { Kpi, Field, inputCls, Th } from '../../components/ui/Kit';
 import { COLORS } from '../teacher/constants';
 import { BOOK_CATS, TODAY, loanStatus, prettyDate } from './constants';
@@ -52,6 +54,9 @@ function Catalogue({ c, stu, addBook, issueBook, returnBook, db }) {
   const available = c.books.filter(b => !b.issuedTo);
   const overdue = c.books.filter(b => loanStatus(b) === 'Overdue').length;
   const cats = [...new Set(c.books.map(b => b.cat))].sort();
+  const ex = useExpand([]);                                   // categories start collapsed
+  const filtering = !!(q || cat || st);                       // while filtering, show the matches
+  const shownCats = [...new Set(rows.map(b => b.cat))].sort();
 
   function saveBook() { if (!bf.title.trim()) return; addBook({ title:bf.title.trim(), author:bf.author.trim(), cat:bf.cat }); setBookOpen(false); setBf({ title:'', author:'', cat:BOOK_CATS[0] }); }
   function saveIssue() { if (!inf.bookId || !inf.studentId || !inf.due) return; issueBook(inf.bookId, inf.studentId, inf.due); setIssueOpen(false); }
@@ -68,29 +73,32 @@ function Catalogue({ c, stu, addBook, issueBook, returnBook, db }) {
         <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search title or category..." className="px-2.5 py-1.5 border border-[#E4E4E4] rounded-[6px] text-[12.5px] outline-none focus:border-[#C8202E] w-56" />
         <select value={cat} onChange={e => setCat(e.target.value)} className="px-2.5 py-1.5 border border-[#E4E4E4] rounded-[6px] text-[12.5px] outline-none focus:border-[#C8202E]"><option value="">All categories</option>{cats.map(x => <option key={x}>{x}</option>)}</select>
         <select value={st} onChange={e => setSt(e.target.value)} className="px-2.5 py-1.5 border border-[#E4E4E4] rounded-[6px] text-[12.5px] outline-none focus:border-[#C8202E]"><option value="">All statuses</option>{Object.keys(STATUS_VARIANT).map(x => <option key={x}>{x}</option>)}</select>
-        <div className="ml-auto flex gap-2"><Button variant="outline" onClick={() => setBookOpen(true)}>+ Add Book</Button><Button onClick={() => { setInf({ bookId:available[0]?.id || '', studentId:'', due:due14() }); setIssueOpen(true); }}>Issue Book</Button></div>
+        <div className="ml-auto flex gap-2"><ExpandControls ex={ex} ids={shownCats.map(x => 'b:' + x)} /><Button variant="outline" onClick={() => setBookOpen(true)}>+ Add Book</Button><Button onClick={() => { setInf({ bookId:available[0]?.id || '', studentId:'', due:due14() }); setIssueOpen(true); }}>Issue Book</Button></div>
       </div>
-      <div className="bg-white border border-[#E4E4E4] rounded-[10px] overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,.07)]">
-        <table className="w-full border-collapse text-[13px]">
-          <thead><tr><Th>Title</Th><Th>Category</Th><Th>Issued To</Th><Th>Class</Th><Th>Due</Th><Th>Status</Th><Th /></tr></thead>
-          <tbody>
-            {!rows.length ? <tr><td colSpan={7} className="text-center py-10 text-[#AAA]">No books match</td></tr> : rows.map(b => {
-              const s = stu(b.issuedTo); const status = loanStatus(b);
-              return (
-                <tr key={b.id} className="border-b border-[#E4E4E4] last:border-b-0 hover:bg-[#F8F8F8]">
-                  <td className="px-4 py-2.5 font-semibold text-[#111]">{b.title}{b.author && <div className="text-[11px] text-[#AAA] font-normal">{b.author}</div>}</td>
-                  <td className="px-4 py-2.5"><Badge variant="grey">{b.cat}</Badge></td>
-                  <td className="px-4 py-2.5 text-[#555]">{s?.name || '—'}</td>
-                  <td className="px-4 py-2.5 text-[#555]">{s ? `${s.cls} ${s.section}` : '—'}</td>
-                  <td className="px-4 py-2.5 text-[#555]">{b.due ? prettyDate(b.due) : '—'}</td>
-                  <td className="px-4 py-2.5"><Badge variant={STATUS_VARIANT[status]}>{status}</Badge></td>
-                  <td className="px-4 py-2.5">{b.issuedTo && <Button size="sm" variant="outline" onClick={() => returnBook(b.id)}>Return</Button>}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      {!rows.length && <div className="bg-white border border-[#E4E4E4] rounded-[10px] p-10 text-center text-[#AAA]">No books match</div>}
+      {shownCats.map(cn => {
+        const items = rows.filter(b => b.cat === cn), all = c.books.filter(b => b.cat === cn);
+        const onLoan = all.filter(b => b.issuedTo).length, late = all.filter(b => loanStatus(b) === 'Overdue').length;
+        return (
+          <Collapsible key={cn} className="mb-3" open={filtering ? true : ex.isOpen('b:' + cn)} onToggle={() => ex.toggle('b:' + cn)}
+            header={<div className="flex items-center gap-2.5"><span className="text-[13.5px] font-bold text-[#111]">{cn}</span><Badge variant="grey">{filtering ? `${items.length} of ${all.length}` : all.length} book{all.length === 1 ? '' : 's'}</Badge><span className="text-[12px] text-[#777]">{all.length - onLoan} available · {onLoan} on loan</span>{late > 0 && <Badge variant="red">{late} overdue</Badge>}</div>}>
+            <table className="w-full border-collapse text-[13px] border-t border-[#E4E4E4]">
+              <thead><tr><Th>Title</Th><Th>Issued To</Th><Th>Class</Th><Th>Due</Th><Th>Status</Th><Th /></tr></thead>
+              <tbody>{items.map(b => {
+                const s = stu(b.issuedTo); const status = loanStatus(b);
+                return (
+                  <tr key={b.id} className="border-b border-[#E4E4E4] last:border-b-0 hover:bg-[#F8F8F8]">
+                    <td className="px-4 py-2.5 font-semibold text-[#111]">{b.title}{b.author && <div className="text-[11px] text-[#AAA] font-normal">{b.author}</div>}</td>
+                    <td className="px-4 py-2.5 text-[#555]">{s?.name || '—'}</td>
+                    <td className="px-4 py-2.5 text-[#555]">{s ? `${s.cls} ${s.section}` : '—'}</td>
+                    <td className="px-4 py-2.5 text-[#555]">{b.due ? prettyDate(b.due) : '—'}</td>
+                    <td className="px-4 py-2.5"><Badge variant={STATUS_VARIANT[status]}>{status}</Badge></td>
+                    <td className="px-4 py-2.5">{b.issuedTo && <Button size="sm" variant="outline" onClick={() => returnBook(b.id)}>Return</Button>}</td>
+                  </tr>);
+              })}</tbody>
+            </table>
+          </Collapsible>);
+      })}
 
       <Modal open={bookOpen} onClose={() => setBookOpen(false)} title="Add Book" footer={<><Button variant="outline" onClick={() => setBookOpen(false)}>Cancel</Button><Button onClick={saveBook}>Save Book</Button></>}>
         <div className="space-y-3">

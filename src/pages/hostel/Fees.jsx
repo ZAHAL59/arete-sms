@@ -6,10 +6,10 @@ import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
 import Collapsible from '../../components/ui/Collapsible';
 import ReceiptModal from '../finance/modals/ReceiptModal';
-import { Kpi, Field, inputCls, Th } from './ui';
+import { Kpi, Field, inputCls, Th, FilterBar, filterCls } from './ui';
 import { MONTHLY_FEE, fmt, TODAY, DEFAULT_FEE_HEADS, HEAD_KINDS, HOSTEL_DUE_DAY } from './constants';
 import { getFeeStructure, PAY_MODES } from '../finance/constants';
-import { ayMonths, monthName, monthShort, paidForMonth, joinMonth, pendingMonths, allocate, headStatus, headCategory, isHostelPay, isOverdue, dueDate } from './hostelFees';
+import { MONTHLY_CATS, ayMonths, monthName, monthShort, paidForMonth, joinMonth, pendingMonths, allocate, headStatus, headCategory, isHostelPay, isOverdue, dueDate } from './hostelFees';
 
 const DEFAULT_IDS = DEFAULT_FEE_HEADS.map(x => x.id);
 
@@ -20,9 +20,14 @@ export default function Fees({ h, setFeeHeads }) {
   const [month, setMonth] = useState(months.includes(TODAY.slice(0, 7)) ? TODAY.slice(0, 7) : months[0]);
   const [collect, setCollect] = useState(null); const [headPay, setHeadPay] = useState(null); const [structure, setStructure] = useState(false);
   const [issued, setIssued] = useState(null); const [receipt, setReceipt] = useState(null);
+  // filters
+  const [mf, setMf] = useState({ q: '', cls: '', status: '' });                       // monthly fees
+  const [df, setDf] = useState({ q: '', cls: '', state: '' });                        // admission fee & deposits
+  const [rf, setRf] = useState({ q: '', type: '', mode: '', from: '', to: '' });      // receipts
 
   const heads = h.feeHeads || DEFAULT_FEE_HEADS;
   const boarders = db.students.filter(s => s.boarding);
+  const has = (s, q) => !q || s.name.toLowerCase().includes(q.toLowerCase());
   const feeOf = s => Math.round((getFeeStructure()[s.cls]?.hostel || MONTHLY_FEE * 12) / 12);
   const roomOf = s => h.rooms.find(r => r.inmates.includes(s.name))?.id;
   const recOf = s => (h.admissions || []).find(a => a.studentId === s.id);
@@ -57,7 +62,18 @@ export default function Fees({ h, setFeeHeads }) {
 
   const forLabel = p => p.period ? monthName(p.period) : (heads.find(x => x.id === p.head)?.name || p.category);
   const history = hostelPays.slice().sort((a, b) => (b.date || '').localeCompare(a.date || '') || b.id.localeCompare(a.id));
-  const statusOf = r => !r.started ? ['grey', 'Joins later'] : r.total === 0 ? ['green', 'Paid'] : (r.arrearsTotal > 0 || isOverdue(month)) ? ['red', 'Overdue'] : r.paid > 0 ? ['amber', 'Partial'] : ['blue', `Due ${HOSTEL_DUE_DAY} ${monthShort(month).split(' ')[0]}`];
+  const nameOf = p => db.students.find(s => s.id === p.studentId)?.name || '';
+  const typeOf = p => (p.period || MONTHLY_CATS.includes(p.category)) ? 'monthly' : (heads.find(x => x.id === p.head)?.id || heads.find(x => headCategory(x) === p.category)?.id || 'other');
+  const rShown = history.filter(p => (!rf.q || (nameOf(p) + ' ' + p.id).toLowerCase().includes(rf.q.toLowerCase())) && (!rf.type || typeOf(p) === rf.type) && (!rf.mode || p.mode === rf.mode) && (!rf.from || p.date >= rf.from) && (!rf.to || p.date <= rf.to));
+  const rActive = !!(rf.q || rf.type || rf.mode || rf.from || rf.to);
+  const dRows = boarders.filter(s => has(s, df.q) && (!df.cls || `${s.cls} ${s.section}`.trim() === df.cls) && (!df.state || (df.state === 'pending' ? heads.some(hd => headStatus(pays, s.id, hd).balance > 0) : heads.every(hd => headStatus(pays, s.id, hd).balance === 0))));
+  const dActive = !!(df.q || df.cls || df.state);
+  const statusKey = r => !r.started ? 'later' : r.total === 0 ? 'paid' : (r.arrearsTotal > 0 || isOverdue(month)) ? 'overdue' : r.paid > 0 ? 'partial' : 'due';
+  const statusOf = r => ({ later: ['grey', 'Joins later'], paid: ['green', 'Paid'], overdue: ['red', 'Overdue'], partial: ['amber', 'Partial'], due: ['blue', `Due ${HOSTEL_DUE_DAY} ${monthShort(month).split(' ')[0]}`] })[statusKey(r)];
+  const classes = [...new Set(boarders.map(s => `${s.cls} ${s.section}`.trim()))].sort((a, b) => parseInt(a.replace(/\D/g, '')) - parseInt(b.replace(/\D/g, '')) || a.localeCompare(b));
+  const shown = rows.filter(r => has(r.s, mf.q) && (!mf.cls || `${r.s.cls} ${r.s.section}`.trim() === mf.cls) && (!mf.status || (mf.status === 'arrears' ? r.arrearsTotal > 0 : statusKey(r) === mf.status)));
+  const mfActive = !!(mf.q || mf.cls || mf.status);
+  const tot = k => shown.reduce((a, r) => a + (r.started ? r[k] : 0), 0);
   const tabBtn = (id, l) => <button onClick={() => setTab(id)} className={`px-4 py-2 text-[13px] font-semibold border-b-2 -mb-px cursor-pointer bg-none ${tab === id ? 'border-[#C8202E] text-[#C8202E]' : 'border-transparent text-[#777] hover:text-[#111]'}`}>{l}</button>;
 
   return (
@@ -76,10 +92,15 @@ export default function Fees({ h, setFeeHeads }) {
           <Kpi label="Previous dues" value={fmt(arrearsAll)} note="Earlier months unpaid" color={arrearsAll ? '#DC2626' : '#166534'} />
           <Kpi label="Total outstanding" value={fmt(outstanding)} note="This month + previous" color="#DC2626" />
         </div>
+        <FilterBar active={mfActive} onClear={() => setMf({ q: '', cls: '', status: '' })} summary={`Showing ${shown.length} of ${rows.length} boarders`}>
+          <input value={mf.q} onChange={e => setMf(f => ({ ...f, q: e.target.value }))} placeholder="Search student…" className={filterCls + ' w-48'} />
+          <select value={mf.cls} onChange={e => setMf(f => ({ ...f, cls: e.target.value }))} className={filterCls}><option value="">All classes</option>{classes.map(c => <option key={c}>{c}</option>)}</select>
+          <select value={mf.status} onChange={e => setMf(f => ({ ...f, status: e.target.value }))} className={filterCls}><option value="">All statuses</option><option value="paid">Paid</option><option value="partial">Partial</option><option value="due">Due</option><option value="overdue">Overdue</option><option value="arrears">Has previous dues</option><option value="later">Joins later</option></select>
+        </FilterBar>
         <div className="bg-white border border-[#E4E4E4] rounded-[10px] overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,.07)] mb-4">
           <table className="w-full border-collapse text-[13px]">
             <thead><tr><Th>Student</Th><Th>Class</Th><Th>Room</Th><Th>Month fee</Th><Th>Paid</Th><Th>Balance</Th><Th>Previous dues</Th><Th>Status</Th><Th /></tr></thead>
-            <tbody>{!rows.length ? <tr><td colSpan={9} className="text-center py-10 text-[#AAA]">No boarders yet — admit students from Hostel Admission</td></tr> : rows.map(r => { const [v, l] = statusOf(r), last = pays.filter(p => p.studentId === r.s.id && p.period === month).sort((a, b) => b.id.localeCompare(a.id))[0];
+            <tbody>{!rows.length ? <tr><td colSpan={9} className="text-center py-10 text-[#AAA]">No boarders yet — admit students from Hostel Admission</td></tr> : !shown.length ? <tr><td colSpan={9} className="text-center py-10 text-[#AAA]">No boarders match these filters</td></tr> : shown.map(r => { const [v, l] = statusOf(r), last = pays.filter(p => p.studentId === r.s.id && p.period === month).sort((a, b) => b.id.localeCompare(a.id))[0];
               return (
                 <tr key={r.s.id} className="border-b border-[#E4E4E4] last:border-b-0 hover:bg-[#F8F8F8]">
                   <td className="px-4 py-2.5 font-semibold text-[#111]">{r.s.name}</td><td className="px-4 py-2.5 text-[#555]">{r.s.cls} {r.s.section}</td>
@@ -91,6 +112,7 @@ export default function Fees({ h, setFeeHeads }) {
                   <td className="px-4 py-2.5"><Badge variant={v}>{l}</Badge></td>
                   <td className="px-4 py-2.5 whitespace-nowrap">{r.total > 0 && <Button size="sm" onClick={() => setCollect(r.s)}>Collect</Button>}{last && <button onClick={() => setReceipt(last)} className="text-[11px] font-semibold text-[#C8202E] underline cursor-pointer bg-none border-none ml-3">Receipt</button>}</td>
                 </tr>); })}</tbody>
+            {shown.length > 0 && <tfoot><tr className="bg-[#F8F8F8] font-bold"><td className="px-4 py-2.5" colSpan={3}>Total{mfActive ? ' (filtered)' : ''}</td><td className="px-4 py-2.5 font-mono text-[12px]">{fmt(tot('fee'))}</td><td className="px-4 py-2.5 font-mono text-[12px] text-[#166534]">{fmt(tot('paid'))}</td><td className="px-4 py-2.5 font-mono text-[12px] text-[#DC2626]">{fmt(tot('bal'))}</td><td className="px-4 py-2.5 font-mono text-[12px] text-[#DC2626]">{fmt(tot('arrearsTotal'))}</td><td colSpan={2} /></tr></tfoot>}
           </table>
         </div>
       </>}
@@ -104,10 +126,15 @@ export default function Fees({ h, setFeeHeads }) {
             <Kpi label="Deposits & advances held" value={fmt(sumHead(x => x.kind !== 'One-time fee'))} note="Refundable / adjustable — not income" color="#1A5FB4" />
             <Kpi label="Still to collect" value={fmt(pendingAll)} note="Across all boarders" color={pendingAll ? '#DC2626' : '#166534'} />
           </div>
+          <FilterBar active={dActive} onClear={() => setDf({ q: '', cls: '', state: '' })} summary={`Showing ${dRows.length} of ${boarders.length} boarders`}>
+            <input value={df.q} onChange={e => setDf(f => ({ ...f, q: e.target.value }))} placeholder="Search student…" className={filterCls + ' w-48'} />
+            <select value={df.cls} onChange={e => setDf(f => ({ ...f, cls: e.target.value }))} className={filterCls}><option value="">All classes</option>{classes.map(c => <option key={c}>{c}</option>)}</select>
+            <select value={df.state} onChange={e => setDf(f => ({ ...f, state: e.target.value }))} className={filterCls}><option value="">All students</option><option value="pending">Something still to collect</option><option value="clear">Everything paid</option></select>
+          </FilterBar>
           <div className="bg-white border border-[#E4E4E4] rounded-[10px] overflow-x-auto shadow-[0_1px_4px_rgba(0,0,0,.07)] mb-4">
             <table className="w-full border-collapse text-[13px]">
               <thead><tr><Th>Student</Th><Th>Room</Th>{heads.map(hd => <Th key={hd.id}>{hd.name}<div className="normal-case tracking-normal font-normal text-[10.5px] text-[#BBB]">{fmt(hd.amount)} · {hd.kind}</div></Th>)}</tr></thead>
-              <tbody>{!boarders.length ? <tr><td colSpan={heads.length + 2} className="text-center py-10 text-[#AAA]">No boarders yet</td></tr> : boarders.map(s => (
+              <tbody>{!boarders.length ? <tr><td colSpan={heads.length + 2} className="text-center py-10 text-[#AAA]">No boarders yet</td></tr> : !dRows.length ? <tr><td colSpan={heads.length + 2} className="text-center py-10 text-[#AAA]">No boarders match these filters</td></tr> : dRows.map(s => (
                 <tr key={s.id} className="border-b border-[#E4E4E4] last:border-b-0 hover:bg-[#F8F8F8]">
                   <td className="px-4 py-2.5"><div className="font-semibold text-[#111]">{s.name}</div><div className="text-[11px] text-[#AAA]">{s.cls} {s.section}</div></td>
                   <td className="px-4 py-2.5">{roomOf(s) ? <Badge variant="blue">{roomOf(s)}</Badge> : <span className="text-[#AAA]">—</span>}</td>
@@ -118,14 +145,23 @@ export default function Fees({ h, setFeeHeads }) {
           </div>
         </>; })()}
 
-      <Collapsible defaultOpen header={<div className="flex items-center gap-2"><span className="text-[13.5px] font-bold text-[#111]">🧾 Receipts</span><Badge variant="grey">{history.length}</Badge></div>}>
+      <Collapsible header={<div className="flex items-center gap-2"><span className="text-[13.5px] font-bold text-[#111]">🧾 Receipts</span><Badge variant="grey">{history.length}</Badge>{rActive && <Badge variant="amber">{rShown.length} shown</Badge>}</div>}>
+        <div className="border-t border-[#E4E4E4] px-4 pt-3">
+          <FilterBar active={rActive} onClear={() => setRf({ q: '', type: '', mode: '', from: '', to: '' })} summary={`${rShown.length} of ${history.length} receipts · ${fmt(rShown.reduce((a, p) => a + p.amount, 0))}`}>
+            <input value={rf.q} onChange={e => setRf(f => ({ ...f, q: e.target.value }))} placeholder="Search student or receipt no…" className={filterCls + ' w-56'} />
+            <select value={rf.type} onChange={e => setRf(f => ({ ...f, type: e.target.value }))} className={filterCls}><option value="">All types</option><option value="monthly">Monthly fee</option>{heads.map(x => <option key={x.id} value={x.id}>{x.name}</option>)}</select>
+            <select value={rf.mode} onChange={e => setRf(f => ({ ...f, mode: e.target.value }))} className={filterCls}><option value="">All modes</option>{PAY_MODES.map(m => <option key={m}>{m}</option>)}</select>
+            <span className="text-[11.5px] text-[#AAA]">From</span><input type="date" value={rf.from} onChange={e => setRf(f => ({ ...f, from: e.target.value }))} className={filterCls} />
+            <span className="text-[11.5px] text-[#AAA]">To</span><input type="date" value={rf.to} min={rf.from} onChange={e => setRf(f => ({ ...f, to: e.target.value }))} className={filterCls} />
+          </FilterBar>
+        </div>
         <table className="w-full border-collapse text-[13px] border-t border-[#E4E4E4]">
           <thead><tr><Th>Date</Th><Th>Receipt</Th><Th>Student</Th><Th>For</Th><Th>Mode</Th><Th>Amount</Th></tr></thead>
-          <tbody>{!history.length ? <tr><td colSpan={6} className="text-center py-8 text-[#AAA]">No hostel payments yet</td></tr> : history.map(p => (
+          <tbody>{!history.length ? <tr><td colSpan={6} className="text-center py-8 text-[#AAA]">No hostel payments yet</td></tr> : !rShown.length ? <tr><td colSpan={6} className="text-center py-8 text-[#AAA]">No receipts match these filters</td></tr> : rShown.map(p => (
             <tr key={p.id} className="border-b border-[#E4E4E4] last:border-b-0 hover:bg-[#F8F8F8]">
               <td className="px-4 py-2.5 text-[#555]">{p.date}</td>
               <td className="px-4 py-2.5"><button onClick={() => setReceipt(p)} className="font-mono text-[11.5px] text-[#C8202E] underline cursor-pointer bg-none border-none">{p.id}</button></td>
-              <td className="px-4 py-2.5 font-semibold text-[#111]">{db.students.find(s => s.id === p.studentId)?.name || '—'}</td>
+              <td className="px-4 py-2.5 font-semibold text-[#111]">{nameOf(p) || '—'}</td>
               <td className="px-4 py-2.5 text-[#555]">{forLabel(p)}</td>
               <td className="px-4 py-2.5"><Badge variant={p.mode?.includes('Online') ? 'blue' : p.mode === 'Cash' ? 'green' : 'amber'}>{p.mode}</Badge></td>
               <td className="px-4 py-2.5 font-mono font-bold text-[#166534]">{fmt(p.amount)}</td></tr>))}</tbody>

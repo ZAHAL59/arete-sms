@@ -6,6 +6,7 @@ import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
 import { COLORS } from '../teacher/constants';
 import { MONTHLY_FEE, fmt } from './constants';
+import { FilterBar, filterCls } from './ui';
 import { getFeeStructure } from '../finance/constants';
 import { headStatus } from './hostelFees';
 import { DEFAULT_FEE_HEADS } from './constants';
@@ -15,9 +16,15 @@ const Info = ({ l, v }) => <div className="bg-[#F8F8F8] rounded-[6px] p-2.5"><di
 
 export default function Inmates({ h }) {
   const db = useStore(s => s.db);
-  const [q, setQ] = useState(''); const [sel, setSel] = useState(null);
-  const boarders = db.students.filter(s => s.boarding && (!q || s.name.toLowerCase().includes(q.toLowerCase())));
+  const [f, setF] = useState({ q: '', cls: '', room: '', diet: '', health: '' }); const [sel, setSel] = useState(null);
+  const all = db.students.filter(s => s.boarding);
   const roomOf = name => h.rooms.find(r => r.inmates.includes(name))?.id;
+  const hasMedical = s => !!s.health && s.health !== 'None';
+  const boarders = all.filter(s => (!f.q || s.name.toLowerCase().includes(f.q.toLowerCase())) && (!f.cls || `${s.cls} ${s.section}`.trim() === f.cls)
+    && (!f.room || (f.room === 'none' ? !roomOf(s.name) : roomOf(s.name) === f.room)) && (!f.diet || s.diet === f.diet) && (!f.health || (f.health === 'has' ? hasMedical(s) : !hasMedical(s))));
+  const active = !!(f.q || f.cls || f.room || f.diet || f.health);
+  const classes = [...new Set(all.map(s => `${s.cls} ${s.section}`.trim()))].sort((a, b) => parseInt(a.replace(/\D/g, '')) - parseInt(b.replace(/\D/g, '')) || a.localeCompare(b));
+  const diets = [...new Set(all.map(s => s.diet).filter(Boolean))];
   const recOf = s => (h.admissions || []).find(a => a.studentId === s.id);
   const fee = s => Math.round((getFeeStructure()[s.cls]?.hostel || MONTHLY_FEE * 12) / 12);
 
@@ -40,15 +47,21 @@ export default function Inmates({ h }) {
 
   return (
     <div className="p-6">
-      <PageHeader title="Inmate Records" subtitle={`${boarders.length} boarders — click a name for the full hostel profile`}
-        actions={<input value={q} onChange={e => setQ(e.target.value)} placeholder="Search inmate..." className="px-2.5 py-1.5 border border-[#E4E4E4] rounded-[6px] text-[12.5px] outline-none focus:border-[#C8202E] w-44" />} />
+      <PageHeader title="Inmate Records" subtitle={`${all.length} boarders — click a name for the full hostel profile`} />
+      <FilterBar active={active} onClear={() => setF({ q: '', cls: '', room: '', diet: '', health: '' })} summary={`Showing ${boarders.length} of ${all.length} boarders`}>
+        <input value={f.q} onChange={e => setF(x => ({ ...x, q: e.target.value }))} placeholder="Search inmate…" className={filterCls + ' w-44'} />
+        <select value={f.cls} onChange={e => setF(x => ({ ...x, cls: e.target.value }))} className={filterCls}><option value="">All classes</option>{classes.map(c => <option key={c}>{c}</option>)}</select>
+        <select value={f.room} onChange={e => setF(x => ({ ...x, room: e.target.value }))} className={filterCls}><option value="">All rooms</option><option value="none">Unplaced</option>{h.rooms.filter(r => r.type !== 'Staff').map(r => <option key={r.id} value={r.id}>{r.id}</option>)}</select>
+        <select value={f.diet} onChange={e => setF(x => ({ ...x, diet: e.target.value }))} className={filterCls}><option value="">All diets</option>{diets.map(d => <option key={d}>{d}</option>)}</select>
+        <select value={f.health} onChange={e => setF(x => ({ ...x, health: e.target.value }))} className={filterCls}><option value="">Any health status</option><option value="has">With medical notes</option><option value="none">No medical notes</option></select>
+      </FilterBar>
       <div className="bg-white border border-[#E4E4E4] rounded-[10px] overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,.07)]">
         <table className="w-full border-collapse text-[13px]">
           <thead><tr>{['Student', 'Class', 'Room', 'Diet', 'Health', 'Parent', 'Emergency contact', 'Hostel since'].map(t =>
             <th key={t} className="px-4 py-2.5 text-left text-[10px] font-bold text-[#AAA] uppercase tracking-wider border-b border-[#E4E4E4] bg-[#F8F8F8]">{t}</th>)}</tr></thead>
           <tbody>
             {!boarders.length
-              ? <tr><td colSpan={8} className="text-center py-10 text-[#AAA]">No boarders found</td></tr>
+              ? <tr><td colSpan={8} className="text-center py-10 text-[#AAA]">{all.length ? 'No boarders match these filters' : 'No boarders yet'}</td></tr>
               : boarders.map((s, i) => { const rec = recOf(s); return (
                 <tr key={s.id} className="border-b border-[#E4E4E4] last:border-b-0 hover:bg-[#F8F8F8]">
                   <td className="px-4 py-2.5">

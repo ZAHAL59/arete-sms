@@ -22,3 +22,16 @@ export function Kpi({ label, value, note, color = '#C8202E' }) {
 export const Th = ({ children }) => (
   <th className="px-4 py-2.5 text-left text-[10px] font-bold text-[#AAA] uppercase tracking-wider border-b border-[#E4E4E4] bg-[#F8F8F8]">{children}</th>
 );
+
+export const filterCls = 'px-2.5 py-1.5 border border-[#E4E4E4] rounded-[6px] text-[12.5px] outline-none focus:border-[#C8202E] bg-white';
+
+// A row of filters with a "Clear filters" link and a "Showing x of y" summary
+export function FilterBar({ children, active, onClear, summary }) {
+  return (
+    <div className="flex items-center gap-2 flex-wrap mb-3">
+      {children}
+      {active && <button onClick={onClear} className="text-[12px] font-semibold text-[#C8202E] underline cursor-pointer bg-none border-none">Clear filters</button>}
+      {summary && <span className="ml-auto text-[12px] text-[#777]">{summary}</span>}
+    </div>
+  );
+}

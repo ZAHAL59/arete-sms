@@ -16,6 +16,13 @@ export default function useHostel() {
       if (r && r.inmates.length < r.capacity) r.inmates.push(name);
       return d;
     }),
+    // One step: record the admission and put the student in the chosen room
+    admitStudent: (rec, roomId) => update(d => {
+      d.rooms.forEach(r => { r.inmates = r.inmates.filter(n => n !== rec.name); });
+      const room = d.rooms.find(x => x.id === roomId); if (room && room.inmates.length < room.capacity) room.inmates.push(rec.name);
+      d.admissions = [{ ...rec, id: 'HA' + Date.now().toString().slice(-6), roomId }, ...(d.admissions || []).filter(a => a.studentId !== rec.studentId)];
+      return d;
+    }),
     removeInmate: (roomId, name) => update(d => {
       const r = d.rooms.find(x => x.id === roomId);
       if (r) r.inmates = r.inmates.filter(n => n !== name);
@@ -32,7 +39,7 @@ export default function useHostel() {
     // Incidents
     addIncident: i => update(d => { d.incidents.unshift({ by:'Warden', ...i, id:'INC'+Date.now().toString().slice(-4), status:'Open' }); return d; }),
     addOrder: o => update(d => { (d.orders ||= []).unshift({ ...o, id:'PO'+Date.now().toString().slice(-5), status:'Ordered', date:new Date().toISOString().slice(0,10) }); return d; }),
-    receiveOrder: id => update(d => { const o = (d.orders || []).find(x => x.id === id); if (!o || o.status === 'Received') return d; (o.lines || []).forEach(l => { const s = d.stock.find(x => x.item === l.item); if (s) s.qty = Math.min(s.max, s.qty + l.qty); }); o.status = 'Received'; o.receivedOn = new Date().toISOString().slice(0,10); return d; }),
+    receiveOrder: id => update(d => { const o = (d.orders || []).find(x => x.id === id); if (!o || o.status === 'Received') return d; (o.lines || []).forEach(l => { const s = d.stock.find(x => x.item === l.item); if (s) s.qty = s.qty + l.qty; }); o.status = 'Received'; o.receivedOn = new Date().toISOString().slice(0,10); return d; }),
     resolveIncident: id => update(d => { const i = d.incidents.find(x => x.id === id); if (i) i.status = 'Resolved'; return d; }),
   };
 }

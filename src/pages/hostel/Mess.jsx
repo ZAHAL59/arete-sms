@@ -5,6 +5,7 @@ import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
 import Collapsible from '../../components/ui/Collapsible';
+import ProcurementModal from './ProcurementModal';
 import { Kpi, Field, inputCls, Th } from './ui';
 import { MONTHLY_FEE, fmt, TODAY, STOCK_CATS, STOCK_UNITS } from './constants';
 import { getFeeStructure } from '../finance/constants';
@@ -18,7 +19,6 @@ export default function Mess({ h, logCost, saveStock, addStock, addOrder, receiv
   const [procure, setProcure] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [nw, setNw] = useState({ item:'', unit:'kg', qty:'', max:'', low:'', cost:'', cat:STOCK_CATS[0], supplier:'' });
-  const [ord, setOrd] = useState({ supplier:'', delivery:'' }); const [placed, setPlaced] = useState(false);
 
   const boarders = db.students.filter(s => s.boarding).length || 1;
   const monthlyBudget = db.students.filter(s => s.boarding).reduce((a, s) => a + Math.round((getFeeStructure()[s.cls]?.hostel || MONTHLY_FEE * 12) / 12), 0) || MONTHLY_FEE;
@@ -27,7 +27,6 @@ export default function Mess({ h, logCost, saveStock, addStock, addOrder, receiv
   const projected = Math.round(spent / Math.max(1, now.getDate()) * 30);
   const util = monthlyBudget ? Math.round(spent / monthlyBudget * 100) : 0;
   const low = h.stock.filter(s => s.qty <= s.low);
-  const orderTotal = low.reduce((a, s) => a + (s.max - s.qty) * s.cost, 0);
 
   function submitCost() {
     const n = parseInt(amt); if (!n) return;
@@ -139,28 +138,7 @@ export default function Mess({ h, logCost, saveStock, addStock, addOrder, receiv
         </div>
       </Modal>
 
-      {/* Procurement order */}
-      <Modal open={procure} onClose={() => setProcure(false)} title="Procurement Order" subtitle={`Arete Model School Hostel · ${new Date().toDateString()}`}
-        footer={<><Button variant="outline" onClick={() => { setProcure(false); setPlaced(false); }}>Close</Button>{low.length > 0 && !placed && <Button onClick={() => { addOrder({ supplier:ord.supplier || 'Supplier', delivery:ord.delivery, total:orderTotal, lines:low.map(x => ({ item:x.item, qty:x.max - x.qty, unit:x.unit, cost:x.cost })) }); setPlaced(true); }}>📦 Place order</Button>}</>}>
-        {!low.length
-          ? <div className="text-center py-6 text-[#166534] font-semibold">All items adequately stocked — no order needed</div>
-          : <>
-              <div className="border border-[#E4E4E4] rounded-[8px] divide-y divide-[#E4E4E4] mb-3">
-                {low.map(s => (
-                  <div key={s.item} className="flex justify-between px-3 py-2.5 text-[13px]">
-                    <span className="font-semibold text-[#111]">{s.item}</span>
-                    <span className="text-[#555]">{s.max - s.qty} {s.unit} × {fmt(s.cost)} = <strong className="text-[#111]">{fmt((s.max - s.qty) * s.cost)}</strong></span>
-                  </div>
-                ))}
-              </div>
-              {!placed && <div className="grid grid-cols-2 gap-3 mb-3"><Field label="Supplier name"><input value={ord.supplier} onChange={e => setOrd(o => ({ ...o, supplier:e.target.value }))} className={inputCls} /></Field><Field label="Expected delivery"><input type="date" value={ord.delivery} onChange={e => setOrd(o => ({ ...o, delivery:e.target.value }))} className={inputCls} /></Field></div>}
-              {placed && <div className="mb-3 text-[13px] text-[#166534] bg-[#F0FDF4] rounded-[6px] p-2.5">✓ Order recorded under Procurement Orders. Contact the supplier directly — orders are not sent automatically.</div>}
-              <div className="bg-[#FEF4F4] border border-[#FECACA] rounded-[8px] p-3 flex justify-between">
-                <span className="font-bold text-[#111]">Estimated Total</span>
-                <span className="font-extrabold text-[#C8202E] font-mono">{fmt(orderTotal)}</span>
-              </div>
-            </>}
-      </Modal>
+      {procure && <ProcurementModal stock={h.stock} onClose={() => setProcure(false)} onPlace={addOrder} />}
     </div>
   );
 }

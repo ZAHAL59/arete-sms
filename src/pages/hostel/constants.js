@@ -42,6 +42,7 @@ export const SEED = {
     Sunday:   {B:'Appam (3), Vegetable Stew, Fruit Juice',L:'Special Meals: Biriyani / Pulao, Raita, Payasam',D:'Chapati (2), Butter Chicken, Dal, Rice, Ice Cream'},
   },
   orders: [],
+  admissions: [],   // hostel admission records (one per student)
   incidents: [
     {id:'INC001',date:'2026-10-15 21:30',stuName:'Mohammed Ashiq',cls:'Grade 7',type:'Health',desc:'Student complained of fever and stomach ache after dinner. Temperature: 38.4°C.',action:'Paracetamol given. Parents informed. Dr. Rajan consulted over phone. Student resting in sick room.',by:'Muhd Zahal (Warden)',status:'Resolved'},
     {id:'INC002',date:'2026-10-12 19:00',stuName:'Arjun Menon',cls:'Grade 9',type:'Behavioural',desc:'Argument with roommate over phone usage. Raised voice and minor push incident.',action:'Both students counselled. Room rules reminder. Parents to be informed at next meeting.',by:'Muhd Zahal (Warden)',status:'Open'},

@@ -2,6 +2,8 @@ import { useState } from 'react';
 import Logo from '../../components/Logo';
 import useHostel from './useHostel';
 import Rooms from './Rooms';
+import Admission from './Admission';
+import useStore from '../../store/useStore';
 import Inmates from './Inmates';
 import Fees from './Fees';
 import Mess from './Mess';
@@ -10,6 +12,7 @@ import Outing from './Outing';
 import Incidents from './Incidents';
 
 const VIEWS = [
+  {id:'admit',    label:'Hostel Admission',icon:'➕', section:'Hostel'},
   {id:'rooms',    label:'Room Allocation', icon:'🏠', section:'Hostel'},
   {id:'inmates',  label:'Inmate Records',  icon:'👥', section:'Hostel'},
   {id:'fees',     label:'Hostel Fees',     icon:'₹',  section:'Hostel'},
@@ -23,10 +26,13 @@ const SECTIONS = [...new Set(VIEWS.map(v => v.section))];
 export default function HostelPortal() {
   const [view, setView] = useState('rooms');
   const H = useHostel();
+  const students = useStore(st => st.db.students);
   const { h } = H;
   const pending = h.outings.filter(o => o.status === 'Pending Approval').length;
   const openInc = h.incidents.filter(i => i.status === 'Open').length;
-  const badge = { outing: pending, incidents: openInc };
+  const placed = new Set(h.rooms.flatMap(r => r.inmates));
+  const waiting = students.filter(x => x.boarding && !placed.has(x.name)).length;   // boarders still without a room
+  const badge = { outing: pending, incidents: openInc, admit: waiting };
 
   return (
     <div className="flex h-screen overflow-hidden">
@@ -58,7 +64,8 @@ export default function HostelPortal() {
         </div>
       </aside>
       <main className="flex-1 overflow-y-auto bg-[#F8F8F8]">
-        {view === 'rooms'     && <Rooms h={h} assignRoom={H.assignRoom} removeInmate={H.removeInmate} />}
+        {view === 'admit'     && <Admission h={h} admitStudent={H.admitStudent} go={setView} />}
+        {view === 'rooms'     && <Rooms h={h} removeInmate={H.removeInmate} go={setView} />}
         {view === 'inmates'   && <Inmates h={h} />}
         {view === 'fees'      && <Fees />}
         {view === 'mess'      && <Mess h={h} logCost={H.logCost} saveStock={H.saveStock} addStock={H.addStock} addOrder={H.addOrder} receiveOrder={H.receiveOrder} />}

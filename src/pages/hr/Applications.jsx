@@ -3,76 +3,86 @@ import { PageHeader } from '../../components/Layout';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
-import { Kpi, Th } from '../../components/ui/Kit';
+import Collapsible from '../../components/ui/Collapsible';
+import { Kpi, Field, inputCls } from '../../components/ui/Kit';
 
-const STATUS_VARIANT = { 'Pending Review':'amber', Shortlisted:'green', Rejected:'red' };
+const STATUS_VARIANT = { 'Pending Review': 'amber', 'Needs Review': 'amber', Shortlisted: 'green', Rejected: 'red' };
 const scoreColor = n => n >= 75 ? '#166534' : n >= 50 ? '#B45309' : '#DC2626';
+const dateFmt = iso => iso ? new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
 
-export default function Applications({ hr, shortlist, reject, restore }) {
-  const [vac, setVac] = useState(''); const [st, setSt] = useState(''); const [selId, setSelId] = useState(null);
+export default function Applications({ hr, shortlist, reject, restore, markInviteSent, initialVac = '' }) {
+  const [vac, setVac] = useState(initialVac); const [st, setSt] = useState('');
+  const [detail, setDetail] = useState(null); const [invite, setInvite] = useState(null); const [msg, setMsg] = useState(''); const [copied, setCopied] = useState(false);
   const apps = (hr.applications || []).slice().sort((a, b) => (b.appliedAt || '').localeCompare(a.appliedAt || ''));
-  const rows = apps.filter(a => (!vac || a.vacId === vac) && (!st || a.hrStatus === st));
-  const sel = apps.find(a => a.id === selId);
-  const vacName = id => { const v = hr.vacancies.find(x => x.id === id); return v ? `${v.subj} Teacher` : '—'; };
+  const list = apps.filter(a => (!vac || a.vacId === vac) && (!st || a.hrStatus === st));
+  const vacancy = id => hr.vacancies.find(v => v.id === id) || { subj: id, qual: '—', exp: '—' };
   const count = s => apps.filter(a => a.hrStatus === s).length;
+  const groups = Object.entries(list.reduce((m, a) => ((m[a.vacId] ||= []).push(a), m), {}));
+  const detailApp = apps.find(a => a.id === detail);
+
+  const inviteText = a => `Dear ${a.name.split(' ')[0]}, you have been shortlisted for ${vacancy(a.vacId).subj} Teacher at Arete Model School. Please attend the interview — the date and time will be communicated shortly. Bring original certificates and photocopies. — HR, Arete Model School`;
+  const openInvite = a => { setInvite(a); setMsg(inviteText(a)); setCopied(false); };
 
   return (
     <div className="p-6">
-      <PageHeader title="Applications Inbox" subtitle="Applications received from the public Careers page"
+      <PageHeader title="Applications Inbox" subtitle="Applications received from the public Careers page — grouped by vacancy"
         actions={<>
-          <select value={vac} onChange={e => setVac(e.target.value)} className="px-2.5 py-1.5 border border-[#E4E4E4] rounded-[6px] text-[12.5px] outline-none focus:border-[#C8202E]">
-            <option value="">All vacancies</option>{hr.vacancies.map(v => <option key={v.id} value={v.id}>{v.subj}</option>)}</select>
-          <select value={st} onChange={e => setSt(e.target.value)} className="px-2.5 py-1.5 border border-[#E4E4E4] rounded-[6px] text-[12.5px] outline-none focus:border-[#C8202E]">
-            <option value="">All statuses</option>{Object.keys(STATUS_VARIANT).map(s => <option key={s}>{s}</option>)}</select>
-        </>} />
+          <select value={vac} onChange={e => setVac(e.target.value)} className="px-2.5 py-1.5 border border-[#E4E4E4] rounded-[6px] text-[12.5px] outline-none focus:border-[#C8202E]"><option value="">All vacancies</option>{hr.vacancies.map(v => <option key={v.id} value={v.id}>{v.subj}</option>)}</select>
+          <select value={st} onChange={e => setSt(e.target.value)} className="px-2.5 py-1.5 border border-[#E4E4E4] rounded-[6px] text-[12.5px] outline-none focus:border-[#C8202E]"><option value="">All statuses</option>{['Pending Review', 'Shortlisted', 'Rejected'].map(s => <option key={s}>{s}</option>)}</select>
+          <a href="/careers" target="_blank" rel="noreferrer" className="px-3 py-2 border border-[#E4E4E4] rounded-[6px] text-[12.5px] font-semibold text-[#555] no-underline hover:bg-[#F8F8F8]">Open Careers Page ↗</a></>} />
       <div className="grid grid-cols-4 gap-3 mb-5">
-        <Kpi label="Total Received" value={apps.length} note="All applications" />
-        <Kpi label="Pending Review" value={count('Pending Review')} note="Need a decision" color="#B45309" />
-        <Kpi label="Shortlisted" value={count('Shortlisted')} note="Moved to candidates" color="#166534" />
-        <Kpi label="Rejected" value={count('Rejected')} note="Can be restored" color="#DC2626" />
+        <Kpi label="Total Received" value={apps.length} note="All applications" /><Kpi label="Pending Review" value={count('Pending Review')} note="Need a decision" color="#B45309" />
+        <Kpi label="Shortlisted" value={count('Shortlisted')} note="In the interview pipeline" color="#166534" /><Kpi label="Rejected" value={count('Rejected')} note="Can be undone" color="#DC2626" />
       </div>
 
-      <div className="bg-white border border-[#E4E4E4] rounded-[10px] overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,.07)]">
-        <table className="w-full border-collapse text-[13px]">
-          <thead><tr><Th>Applicant</Th><Th>Position</Th><Th>Qualification</Th><Th>Experience</Th><Th>Auto-score</Th><Th>Applied</Th><Th>Status</Th><Th /></tr></thead>
-          <tbody>
-            {!rows.length ? <tr><td colSpan={8} className="text-center py-12 text-[#AAA]">{apps.length ? 'No applications match' : 'No applications yet — they appear here when someone applies on the Careers page'}</td></tr>
-              : rows.map(a => (
-                <tr key={a.id} onClick={() => setSelId(a.id)} className="border-b border-[#E4E4E4] last:border-b-0 hover:bg-[#F8F8F8] cursor-pointer">
-                  <td className="px-4 py-2.5"><div className="font-semibold text-[#111]">{a.name}</div><div className="font-mono text-[10.5px] text-[#AAA]">{a.id}</div></td>
-                  <td className="px-4 py-2.5 text-[#555]">{vacName(a.vacId)}</td>
-                  <td className="px-4 py-2.5 text-[#555]">{a.qual}</td>
-                  <td className="px-4 py-2.5 text-[#555]">{a.exp}</td>
-                  <td className="px-4 py-2.5"><div className="flex items-center gap-2"><div className="h-1.5 bg-[#E4E4E4] rounded-full w-12 overflow-hidden"><div className="h-full rounded-full" style={{ width:`${a.score}%`, background:scoreColor(a.score) }} /></div><span className="font-bold" style={{ color:scoreColor(a.score) }}>{a.score}</span></div></td>
-                  <td className="px-4 py-2.5 text-[#777] text-[12px]">{a.appliedAt ? new Date(a.appliedAt).toLocaleDateString('en-IN', { day:'numeric', month:'short' }) : '—'}</td>
-                  <td className="px-4 py-2.5"><Badge variant={STATUS_VARIANT[a.hrStatus] || 'grey'}>{a.hrStatus}</Badge></td>
-                  <td className="px-4 py-2.5 text-[11px] font-semibold text-[#C8202E] underline">Open</td>
-                </tr>))}
-          </tbody>
-        </table>
-      </div>
+      {!list.length && <div className="bg-white border border-[#E4E4E4] rounded-[10px] text-center py-16 px-6">
+        <div className="text-[40px] mb-3">📭</div><div className="text-[16px] font-bold text-[#555] mb-1">{apps.length ? 'No applications match' : 'No applications yet'}</div>
+        <div className="text-[13.5px] text-[#AAA] mb-5">{apps.length ? 'Try a different vacancy or status.' : 'Post a vacancy and share the careers page link with candidates.'}</div>
+        {!apps.length && <a href="/careers" target="_blank" rel="noreferrer" className="inline-block px-4 py-2 bg-[#C8202E] text-white text-[12.5px] font-semibold rounded-[6px] no-underline">Open Careers Page →</a>}</div>}
 
-      {sel && (
-        <Modal open onClose={() => setSelId(null)} size="lg" title={sel.name} subtitle={`${vacName(sel.vacId)} · ${sel.id}`}
-          footer={<>
-            <Button variant="outline" onClick={() => setSelId(null)}>Close</Button>
-            {sel.hrStatus === 'Rejected' && <Button variant="outline" onClick={() => restore(sel.id)}>↩ Restore</Button>}
-            {sel.hrStatus !== 'Rejected' && <Button variant="danger" onClick={() => reject(sel.id)}>Reject</Button>}
-            {sel.hrStatus === 'Pending Review' && <Button onClick={() => shortlist(sel.id)}>✓ Shortlist</Button>}
-          </>}>
-          <div className="flex items-center gap-3 mb-4">
-            <Badge variant={STATUS_VARIANT[sel.hrStatus] || 'grey'}>{sel.hrStatus}</Badge>
-            <span className="text-[12.5px] text-[#555]">Auto-score <b style={{ color:scoreColor(sel.score) }}>{sel.score}/100</b> <span className="text-[#AAA]">(a rough guide — qualification, experience and skills detail)</span></span>
-          </div>
-          <div className="grid grid-cols-2 gap-2 mb-3">
-            {[['Phone', sel.phone || '—'], ['Email', sel.email || '—'], ['Date of Birth', sel.dob || '—'], ['Address', sel.address || '—'],
-              ['Qualification', sel.qual], ['Specialisation', sel.spec || '—'], ['Experience', sel.exp], ['Current Employer', sel.employer || '—']].map(([l, v]) => (
-              <div key={l} className="bg-[#F8F8F8] p-2.5 rounded-[6px]"><div className="text-[10px] font-bold text-[#AAA] uppercase tracking-wider mb-1">{l}</div><div className="text-[13px] text-[#333] break-words">{v}</div></div>))}
-          </div>
-          {[['Skills', sel.skills], ['Cover note', sel.cover]].map(([l, v]) => v ? <div key={l} className="mb-3"><div className="text-[10px] font-bold text-[#AAA] uppercase tracking-wider mb-1">{l}</div><div className="text-[13px] text-[#333] leading-relaxed bg-[#F8F8F8] p-3 rounded-[6px]">{v}</div></div> : null)}
-          <div className="text-[12px] text-[#777]">📎 CV: {sel.cvFileName}{sel.cvFileName !== 'Not uploaded' && <span className="text-[#AAA]"> — file name only; storing the file itself needs a backend</span>}</div>
-          {sel.hrStatus === 'Shortlisted' && <div className="mt-3 text-[12.5px] text-[#166534] bg-[#F0FDF4] rounded-[6px] p-2.5 flex items-center gap-3"><span className="flex-1">Added to the candidate list under Vacancies. Schedule the interview from the Interviews page.</span><Button size="sm" variant="outline" onClick={() => navigator.clipboard?.writeText(`Dear ${sel.name.split(' ')[0]}, thank you for applying for ${vacName(sel.vacId)} at Arete Model School. You have been shortlisted — we will contact you shortly with interview details. — HR, Arete Model School`)}>📋 Copy invite message</Button></div>}
-        </Modal>)}
+      {groups.map(([vid, items]) => {
+        const v = vacancy(vid); const n = s => items.filter(a => a.hrStatus === s).length;
+        return (
+          <Collapsible key={vid} defaultOpen className="mb-4" header={
+            <div className="flex items-center gap-3 flex-1 flex-wrap"><div><div className="text-[14px] font-bold text-[#111]">{v.subj} Teacher</div><div className="text-[11.5px] text-[#777]">Requires: {v.qual} · {v.exp}</div></div>
+              <div className="ml-auto flex gap-1.5"><Badge variant="grey">{items.length} applied</Badge>{n('Pending Review') > 0 && <Badge variant="amber">{n('Pending Review')} pending</Badge>}{n('Shortlisted') > 0 && <Badge variant="green">{n('Shortlisted')} shortlisted</Badge>}{n('Rejected') > 0 && <Badge variant="red">{n('Rejected')} rejected</Badge>}</div></div>}>
+            <div className="p-3 space-y-3 border-t border-[#E4E4E4]">{items.map(a => {
+              const col = scoreColor(a.score), hasCv = a.cvFileName && a.cvFileName !== 'Not uploaded', pending = ['Pending Review', 'Needs Review'].includes(a.hrStatus);
+              return (
+                <div key={a.id} className={`rounded-[10px] border p-4 ${a.hrStatus === 'Rejected' ? 'border-[#FECACA] bg-[#FFFAFA] opacity-80' : a.hrStatus === 'Shortlisted' ? 'border-[#BBF7D0] bg-[#F6FEF9]' : 'border-[#E4E4E4] bg-white'}`}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-[46px] h-[46px] rounded-full flex items-center justify-center text-[17px] font-extrabold font-mono flex-shrink-0" style={{ background: col + '18', border: `2.5px solid ${col}`, color: col }} title="Auto-score">{a.score}</div>
+                    <div className="flex-1 min-w-0"><div className="text-[14px] font-bold text-[#111]">{a.name}</div><div className="text-[12px] text-[#777] mt-0.5">{a.qual}{a.spec ? ' · ' + a.spec : ''} · {a.exp}</div><div className="text-[11.5px] text-[#AAA] mt-0.5">📞 {a.phone || '—'}{a.email ? ' · ✉ ' + a.email : ''}</div></div>
+                    <div className="flex flex-col items-end gap-1.5"><Badge variant={STATUS_VARIANT[a.hrStatus] || 'grey'}>{a.hrStatus}</Badge><span className="text-[10.5px] text-[#AAA]">{dateFmt(a.appliedAt)}</span></div>
+                  </div>
+                  {hasCv ? <div className="mt-2.5 px-2.5 py-2 bg-[#EFF5FF] text-[#1A5FB4] rounded-[6px] text-[12.5px]">📎 {a.cvFileName}</div> : <div className="mt-2 px-2.5 py-1.5 bg-[#FFFBEB] text-[#B45309] rounded-[6px] text-[12px]">⚠ CV not uploaded — candidate filled the form only</div>}
+                  {a.cover && <div className="mt-2 px-3 py-2 bg-[#F8F8F8] rounded-[6px] text-[12.5px] text-[#555] italic leading-relaxed">💬 "{a.cover.slice(0, 160)}{a.cover.length > 160 ? '…' : ''}"</div>}
+                  {a.skills && <div className="mt-2 text-[12px] text-[#777]">🎯 {a.skills}</div>}
+                  {a.employer && <div className="mt-0.5 text-[12px] text-[#AAA]">🏫 Previously at: {a.employer}</div>}
+                  <div className="flex items-center gap-2 mt-3 pt-3 border-t border-[#E4E4E4]">
+                    {pending && <><Button size="sm" onClick={() => shortlist(a.id)}>✓ Shortlist</Button><Button size="sm" variant="outline" onClick={() => reject(a.id)}>✗ Reject</Button></>}
+                    {a.hrStatus === 'Shortlisted' && !a.inviteSent && <Button size="sm" variant="outline" onClick={() => openInvite(a)}>📧 Send Interview Invite</Button>}
+                    {a.hrStatus === 'Shortlisted' && a.inviteSent && <span className="text-[11.5px] text-[#166534] font-semibold">✓ Invite sent · {dateFmt(a.inviteSentAt)}</span>}
+                    {a.hrStatus === 'Rejected' && <Button size="sm" variant="outline" onClick={() => restore(a.id)}>↩ Undo Reject</Button>}
+                    <button onClick={() => setDetail(a.id)} className="text-[11.5px] font-semibold text-[#C8202E] underline cursor-pointer bg-none border-none ml-1">Details</button>
+                    <span className="ml-auto text-[11px] text-[#AAA] font-mono">Ref: {a.id}</span>
+                  </div>
+                </div>);
+            })}</div>
+          </Collapsible>);
+      })}
+
+      {detailApp && <Modal open onClose={() => setDetail(null)} size="lg" title={detailApp.name} subtitle={`${vacancy(detailApp.vacId).subj} Teacher · ${detailApp.id}`} footer={<Button variant="outline" onClick={() => setDetail(null)}>Close</Button>}>
+        <div className="grid grid-cols-2 gap-2">{[['Phone', detailApp.phone], ['Email', detailApp.email], ['Date of Birth', detailApp.dob], ['Address', detailApp.address], ['Qualification', detailApp.qual], ['Specialisation', detailApp.spec], ['Experience', detailApp.exp], ['Current / last employer', detailApp.employer], ['Applied', dateFmt(detailApp.appliedAt)], ['Auto-score', `${detailApp.score}/100 (rough guide)`]].map(([l, v]) => (
+          <div key={l} className="bg-[#F8F8F8] p-2.5 rounded-[6px]"><div className="text-[10px] font-bold text-[#AAA] uppercase tracking-wider mb-1">{l}</div><div className="text-[13px] text-[#333] break-words">{v || '—'}</div></div>))}</div>
+        {detailApp.cover && <div className="mt-3"><div className="text-[10px] font-bold text-[#AAA] uppercase tracking-wider mb-1">Cover note</div><div className="text-[13px] text-[#333] leading-relaxed bg-[#F8F8F8] p-3 rounded-[6px]">{detailApp.cover}</div></div>}
+        <div className="text-[12px] text-[#777] mt-3">📎 CV: {detailApp.cvFileName}{detailApp.cvFileName !== 'Not uploaded' && <span className="text-[#AAA]"> — file name only; storing the file itself needs a backend</span>}</div></Modal>}
+
+      {invite && <Modal open onClose={() => setInvite(null)} size="lg" title={`Interview invitation — ${invite.name}`} subtitle="Sending is not automatic: copy the message, send it yourself, then mark it as sent"
+        footer={<><Button variant="outline" onClick={() => setInvite(null)}>Cancel</Button><Button variant="outline" onClick={() => { navigator.clipboard?.writeText(msg); setCopied(true); }}>{copied ? '✓ Copied' : '📋 Copy message'}</Button><Button onClick={() => { markInviteSent(invite.id, msg); setInvite(null); }}>✓ Mark invite as sent</Button></>}>
+        <div className="text-[12px] text-[#777] mb-2">To: <b>{invite.name}</b> · {invite.phone || invite.email || 'no contact on file'}</div>
+        <Field label="Message"><textarea rows={5} value={msg} onChange={e => setMsg(e.target.value)} className={inputCls + ' resize-y'} /></Field>
+        <div className="text-[11.5px] text-[#AAA] mt-2">Marking it as sent moves the candidate to "Interview Scheduled" and keeps a record of the message.</div></Modal>}
     </div>
   );
 }

@@ -16,16 +16,24 @@ export default function useHR() {
 
   return {
     hr,
-    addVacancy:    (v)       => update(d => { d.vacancies.push({...v, id:'V'+String(d.vacancies.length+1).padStart(3,'0'), posted:new Date().toISOString().slice(0,10), status:'Active'}); return d; }),
+    addVacancy:    (v)       => update(d => { d.vacancies.push({...v, count: Math.max(1, parseInt(v.count) || 1), id:'V'+String(d.vacancies.length+1).padStart(3,'0'), posted:new Date().toISOString().slice(0,10), status:'Active'}); return d; }),
     updateVacancy: (id, f)   => update(d => { const i=d.vacancies.findIndex(x=>x.id===id); if(i>=0) d.vacancies[i]={...d.vacancies[i],...f}; return d; }),
     addCandidate:  (c)       => update(d => { d.candidates.push({...c, id:'C'+String(d.candidates.length+1).padStart(3,'0'), status:'Shortlisted'}); return d; }),
     updateCandidate:(id,f)   => update(d => { const i=d.candidates.findIndex(x=>x.id===id); if(i>=0) d.candidates[i]={...d.candidates[i],...f}; return d; }),
-    scheduleInterview:(intvw)=> update(d => { d.interviews.push({...intvw, id:'I'+String(d.interviews.length+1).padStart(3,'0'), status:'Scheduled', scores:{}, feedback:''}); return d; }),
+    scheduleInterview:(intvw)=> update(d => { d.interviews.push({...intvw, id:'I'+String(d.interviews.length+1).padStart(3,'0'), status:'Scheduled', scores:{}, remarks:'', decision:''}); const c = d.candidates.find(x => x.id === intvw.candId); if (c && ['Shortlisted','Pending'].includes(c.status)) c.status = 'Interview Scheduled'; return d; }),
     updateInterview:(id,f)   => update(d => { const i=d.interviews.findIndex(x=>x.id===id); if(i>=0) d.interviews[i]={...d.interviews[i],...f}; return d; }),
     addTraining:   (t)       => update(d => { d.training.push({...t, id:'TR'+String(d.training.length+1).padStart(3,'0'), attendance:{}, status:'Upcoming'}); return d; }),
     markTrainingAtt:(tId,sId,status) => update(d => { const t=d.training.find(x=>x.id===tId); if(t) t.attendance[sId]=status; return d; }),
     updateLeave:   (id,status) => update(d => { const l=d.leaveRequests.find(x=>x.id===id); if(l) l.status=status; return d; }),
     addLeave:      (l)       => update(d => { d.leaveRequests.push({...l, id:'LR'+String(d.leaveRequests.length+1).padStart(3,'0'), status:'Pending'}); return d; }),
+    // HR copies the invitation, sends it, then records that it was sent
+    markInviteSent: (appId, msg) => update(d => {
+      const a = (d.applications || []).find(x => x.id === appId); if (!a) return d;
+      a.inviteSent = true; a.inviteSentAt = new Date().toISOString();
+      const c = d.candidates.find(x => x.appId === appId); if (c && ['Shortlisted', 'Pending'].includes(c.status)) c.status = 'Interview Scheduled';
+      (d.notifications ||= []).push({ id: 'N' + Date.now().toString().slice(-6), type: 'interview_invite', to: a.name, contact: a.phone || a.email || '—', msg, sentAt: a.inviteSentAt, appId });
+      return d;
+    }),
     shortlistApplication: (id) => update(d => {
       const a = (d.applications || []).find(x => x.id === id); if (!a) return d;
       let c = d.candidates.find(x => x.appId === id);

@@ -48,17 +48,35 @@ export const SEED = {
   ],
   documents: {}, // staffId → [{id,name,type,date,url}]
   applications: [], // submitted from the public Careers page
+  notifications: [], // invitation messages HR has marked as sent
 };
 
+// Three sample applications, as in the original system, so the inbox can be tried straight away
+function demoApplications(vacId) {
+  const day = n => new Date(Date.now() - n * 86400000).toISOString();
+  return [
+    { id:'APP-10000001', vacId, name:'Meera Nair', dob:'1995-04-12', phone:'+91 94470 88001', email:'meera@gmail.com', address:'Kozhikode, Kerala', qual:'M.Sc + B.Ed', spec:'Mathematics', exp:'4 years', employer:'St. Joseph School, Kozhikode', skills:'Digital classroom tools, Malayalam medium, NEP 2020 trained', cover:'I am passionate about making Mathematics accessible and enjoyable for secondary students. I have 4 years of experience in CBSE schools and have completed a NEP 2020 orientation programme.', cvFileName:'Meera_Nair_CV.pdf', score:85, hrStatus:'Pending Review', appliedAt:day(2) },
+    { id:'APP-10000002', vacId, name:'Rajan Pillai', dob:'1990-11-20', phone:'+91 94471 88002', email:'rajan.p@gmail.com', address:'Thrissur, Kerala', qual:'M.Sc + B.Ed', spec:'Mathematics', exp:'7 years', employer:'DPS Thrissur', skills:'IIT Foundation coaching, competitive exam prep, digital tools', cover:'7 years teaching Maths at CBSE schools. Have coached students for IIT Foundation successfully.', cvFileName:'Rajan_Pillai_Resume.pdf', score:90, hrStatus:'Pending Review', appliedAt:day(1) },
+    { id:'APP-10000003', vacId, name:'Divya Thomas', dob:'1998-08-05', phone:'+91 94472 88003', email:'divya.t@gmail.com', address:'Malappuram, Kerala', qual:'B.Ed', spec:'Mathematics', exp:'Fresher', employer:'', skills:'Enthusiastic fresher, completed B.Ed with distinction', cover:'Fresh graduate, keen to start my teaching career at a progressive school.', cvFileName:'Not uploaded', score:35, hrStatus:'Pending Review', appliedAt:day(0) },
+  ];
+}
+
 export function loadHR() {
-  try { const r=localStorage.getItem(HR_KEY); if(r) return {...SEED,...JSON.parse(r)}; } catch {}
-  return JSON.parse(JSON.stringify(SEED));
+  let d;
+  try { const r = localStorage.getItem(HR_KEY); d = r ? { ...SEED, ...JSON.parse(r) } : JSON.parse(JSON.stringify(SEED)); } catch { d = JSON.parse(JSON.stringify(SEED)); }
+  if (!d.demoAppsSeeded) {            // one-time, only if nothing has been received yet
+    d.demoAppsSeeded = true;
+    if (!(d.applications || []).length && d.vacancies?.length) { d.applications = demoApplications(d.vacancies[0].id); saveHR(d); }
+  }
+  return d;
 }
 export function saveHR(data) {
   try { localStorage.setItem(HR_KEY, JSON.stringify(data)); } catch {}
 }
 
-export const CAND_STATUS_VARIANT = {Shortlisted:'amber',Recommended:'green',Rejected:'red',Hired:'green',Pending:'grey','Interview Done':'blue'};
+export const CAND_STATUS_VARIANT = {Shortlisted:'amber',Recommended:'green',Rejected:'red',Hired:'green',Pending:'grey','Interview Done':'blue','Interview Scheduled':'blue'};
+export const DEPARTMENTS = ['Primary','Secondary','Senior Secondary','Administration'];
+export const EXP_OPTIONS = ['Fresher','1+ years','2+ years','3+ years','5+ years'];
 export const DOC_TYPES = ['Appointment Letter','Aadhaar','PAN Card','Degree Certificate','B.Ed Certificate','Medical Fitness','Police Clearance','Contract','Other'];
 export const DECISIONS = ['Recommended','Hold','Rejected'];
 export const totalScore = (scores, checklist) => checklist.reduce((a, c) => a + Math.min(+((scores || {})[c.id]) || 0, c.max), 0);

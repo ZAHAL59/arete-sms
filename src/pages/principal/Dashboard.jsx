@@ -70,7 +70,7 @@ export default function Dashboard({ p, go, openRoute }) {
         <div key={l} onClick={() => openRoute(to)} className="bg-white border border-[#E4E4E4] rounded-[10px] p-3 cursor-pointer hover:shadow-[0_4px_16px_rgba(0,0,0,.1)] transition-all">
           <div className="text-[10px] font-bold text-[#AAA] uppercase tracking-wider">{l}</div><div className="text-[22px] font-extrabold leading-tight" style={{ color: v ? '#C8202E' : '#166534' }}>{v}</div><div className="text-[11px] text-[#AAA]">{n}</div></div>))}</div>
 
-      <Collapsible defaultOpen className="mb-4" header={<div className="flex items-center gap-3 flex-1"><span className="text-[13.5px] font-bold text-[#111]">⏳ Pending Approvals</span><span className="ml-auto text-[11.5px] font-bold" style={{ color: pending ? '#C8202E' : '#166534' }}>{pending ? `${pending} item${pending > 1 ? 's' : ''} pending` : 'All clear ✓'}</span></div>}>
+      <Collapsible className="mb-4" header={<div className="flex items-center gap-3 flex-1"><span className="text-[13.5px] font-bold text-[#111]">⏳ Pending Approvals</span><span className="ml-auto text-[11.5px] font-bold" style={{ color: pending ? '#C8202E' : '#166534' }}>{pending ? `${pending} item${pending > 1 ? 's' : ''} pending` : 'All clear ✓'}</span></div>}>
         <div className="border-t border-[#E4E4E4] divide-y divide-[#E4E4E4]">
           {!pending && <div className="px-4 py-3 text-[13px] text-[#AAA]">✓ No pending approvals — everything is up to date</div>}
           {openComplaints.slice(0, 3).map(c => <Row key={c.id} ic="C" col="#DC2626" text={c.subj.slice(0, 70)} sub={`Complaint · ${c.type}`} actions={<Button size="sm" variant="outline" onClick={() => openRoute('/campus')}>Open →</Button>} />)}
@@ -88,22 +88,22 @@ export default function Dashboard({ p, go, openRoute }) {
 
       <div className="grid grid-cols-3 gap-4">
         <div className="col-span-2 space-y-3">
-          <Collapsible defaultOpen header={<span className="text-[13.5px] font-bold text-[#111]">Fee Collection — AY {p.settings.year}</span>}>
+          <Collapsible header={<div className="flex items-center gap-3 flex-1"><span className="text-[13.5px] font-bold text-[#111]">Fee Collection — AY {p.settings.year}</span><span className="ml-auto text-[11.5px] text-[#777]"><b className="text-[#166534]">{fmtL(collected)}</b> of {fmtL(totalDue)} · {pct}%</span></div>}>
             <div className="p-4 border-t border-[#E4E4E4]"><div className="flex items-baseline gap-2"><span className="text-[26px] font-extrabold">{fmt(collected)}</span><span className="text-[12px] text-[#AAA]">of {fmt(totalDue)} billed</span></div>
               <div className="h-2 bg-[#E4E4E4] rounded-full mt-3 overflow-hidden"><div className="h-full bg-[#166534] rounded-full" style={{ width: `${Math.min(100, pct)}%` }} /></div>
               <div className="flex justify-between text-[12px] text-[#777] mt-1.5"><span>{pct}%</span><span>{fmt(Math.max(0, totalDue - collected))} remaining</span></div></div>
           </Collapsible>
-          <Collapsible defaultOpen header={<div className="flex items-center gap-3 flex-1"><span className="text-[13.5px] font-bold text-[#111]">Recently Enrolled</span><Button size="sm" variant="outline" className="ml-auto" onClick={e => { e.stopPropagation(); go('students'); }}>All students →</Button></div>}>
+          <Collapsible header={<div className="flex items-center gap-3 flex-1"><span className="text-[13.5px] font-bold text-[#111]">Recently Enrolled</span><span className="text-[11.5px] text-[#AAA]">{Math.min(6, db.students.length)} of {db.students.length}</span><Button size="sm" variant="outline" className="ml-auto" onClick={e => { e.stopPropagation(); go('students'); }}>All students →</Button></div>}>
             <table className="w-full border-collapse text-[13px] border-t border-[#E4E4E4]"><tbody>{db.students.slice(-6).reverse().map(s => (
               <tr key={s.id} onClick={() => setSel(s)} className="border-b border-[#E4E4E4] last:border-b-0 hover:bg-[#F8F8F8] cursor-pointer"><td className="px-4 py-2.5 font-semibold text-[#111]">{s.name}</td><td className="px-4 py-2.5 text-[#555]">{s.cls} {s.section}</td><td className="px-4 py-2.5 text-[#AAA] text-[12px]">Admitted {s.adm}</td></tr>))}</tbody></table>
           </Collapsible>
         </div>
         <div className="space-y-3">
-          <Collapsible defaultOpen header={<span className="text-[13.5px] font-bold text-[#111]">Today's Activity</span>}>
+          <Collapsible header={<div className="flex items-center gap-2 flex-1"><span className="text-[13.5px] font-bold text-[#111]">Today's Activity</span><span className="ml-auto text-[11.5px] text-[#777]">{activity.length} update{activity.length === 1 ? '' : 's'}</span></div>}>
             <div className="border-t border-[#E4E4E4] divide-y divide-[#E4E4E4]">{!activity.length ? <div className="p-4 text-[12.5px] text-[#AAA]">No activity yet</div> : activity.map((a, i) => (
               <div key={i} className="flex gap-2.5 px-4 py-2.5"><span className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={{ background: a.c }} /><div><div className="text-[12.5px] text-[#333]" dangerouslySetInnerHTML={{ __html: a.msg }} /><div className="text-[10.5px] text-[#AAA]">{prettyDate(a.at)}</div></div></div>))}</div>
           </Collapsible>
-          <Collapsible defaultOpen header={<span className="text-[13.5px] font-bold text-[#111]">Calendar</span>}>
+          <Collapsible header={<div className="flex items-center gap-2 flex-1"><span className="text-[13.5px] font-bold text-[#111]">Calendar</span><span className="ml-auto text-[11.5px] text-[#777]">{MONTHS[cal.m]} {cal.y}</span></div>}>
             <div className="p-3 border-t border-[#E4E4E4]">
               <div className="flex items-center justify-between mb-2"><button onClick={() => shiftMonth(-1)} className="px-2 cursor-pointer bg-none border-none text-[16px]">‹</button><span className="text-[13px] font-bold">{MONTHS[cal.m]} {cal.y}</span><button onClick={() => shiftMonth(1)} className="px-2 cursor-pointer bg-none border-none text-[16px]">›</button></div>
               <div className="grid grid-cols-7 text-center text-[10px] font-bold text-[#AAA] mb-1">{['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => <div key={d}>{d}</div>)}</div>

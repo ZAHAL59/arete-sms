@@ -41,7 +41,7 @@ export default function IndexPage() {
               </Link>))}</div>
           </section>))}
       </main>
-      <footer className="border-t border-[#E4E4E4] px-6 py-6 text-center text-[12px] text-[#AAA]">Arete Model School<br />Mohammed Zahal · R&D Team</footer>
+      <footer className="border-t border-[#E4E4E4] px-6 py-6 text-center text-[12px] text-[#AAA]">Arete Model School · Built by Shaheen Digital Academy<br />Mohammed Zahal · R&D Team</footer>
     </div>
   );
 }

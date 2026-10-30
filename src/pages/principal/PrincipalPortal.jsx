@@ -50,18 +50,20 @@ export default function PrincipalPortal() {
   const { p, ...api } = usePrincipal();
   const db = useStore(s => s.db);
   const [view, setView] = useState('dashboard');
-  const [open, setOpen] = useState({ adm: true, acad: true, fin: true, ops: true, conn: false });
+  const [open, setOpen] = useState({ adm: false, acad: false, fin: false, ops: false, conn: false });   // all collapsed to start with
+  const groupOf = id => GROUPS.find(g => g.items.some(([i]) => i === id))?.id;
+  const goTo = v => { setView(v); const g = groupOf(v); if (g) setOpen(o => ({ ...o, [g]: true })); };       // opening a page opens its group
   const [settings, setSettings] = useState(null);
   const badge = { students: db.students.length, communication: p.announcements.length };
 
   const body = {
-    dashboard: <Dashboard p={p} go={setView} openRoute={navigate} />, admissions: <AdmissionsView />, students: <Students settings={p.settings} />,
+    dashboard: <Dashboard p={p} go={goTo} openRoute={navigate} />, admissions: <AdmissionsView />, students: <Students settings={p.settings} />,
     timetable: <Timetable p={p} api={api} />, attendance: <Attendance settings={p.settings} p={p} api={api} />, learning: <Learning p={p} api={api} />,
     staff: <Staff p={p} api={api} />, payroll: <Payroll p={p} api={api} />, fees: <Fees />, communication: <Communication p={p} api={api} />, health: <Health p={p} api={api} />, reports: <Reports p={p} />,
   }[view];
 
   const Item = ({ id, label, icon }) => (
-    <div onClick={() => setView(id)} className={`flex items-center gap-2.5 py-2 mx-2 rounded-[7px] text-[12.5px] cursor-pointer transition-all select-none ${view === id ? 'bg-[#FEF4F4] text-[#C8202E] font-semibold border-l-[3px] border-[#C8202E] rounded-l-none ml-0 pl-[11px] pr-3' : 'text-[#555] hover:bg-[#FEF4F4] hover:text-[#C8202E] px-3'}`}>
+    <div onClick={() => goTo(id)} className={`flex items-center gap-2.5 py-2 mx-2 rounded-[7px] text-[12.5px] cursor-pointer transition-all select-none ${view === id ? 'bg-[#FEF4F4] text-[#C8202E] font-semibold border-l-[3px] border-[#C8202E] rounded-l-none ml-0 pl-[11px] pr-3' : 'text-[#555] hover:bg-[#FEF4F4] hover:text-[#C8202E] px-3'}`}>
       <span className="text-[14px] w-5 text-center flex-shrink-0">{icon}</span><span className="flex-1">{label}</span>
       {badge[id] > 0 && <span className="text-[9px] font-bold bg-[#FEF4F4] text-[#C8202E] px-1.5 py-0.5 rounded-full">{badge[id]}</span>}
     </div>

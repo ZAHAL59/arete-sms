@@ -33,36 +33,50 @@ export function offerLetterHtml(ol, vac) {
 <p style="text-align:center;margin-top:30px"><button onclick="window.print()" style="padding:8px 22px;background:#C8202E;color:#fff;border:0;border-radius:6px;cursor:pointer">Print</button></p></body></html>`;
 }
 
-export default function Interviews({ hr, scheduleInterview, updateInterview, setChecklist, saveInterviewResult, hireCandidate }) {
+export default function Interviews({ hr, scheduleInterview, setChecklist, saveInterviewResult, hireCandidate }) {
   const db = useStore(s => s.db);
   const [score, setScore] = useState(null);      // { id|null, cand }
-  const [sched, setSched] = useState(false); const [picker, setPicker] = useState(false);
+  const [sched, setSched] = useState(null);      // { cand|null } — null cand = pick from a list
+  const [picker, setPicker] = useState(false);
   const [cl, setCl] = useState(null); const [hire, setHire] = useState(null); const [letter, setLetter] = useState(null);
   const [form, setForm] = useState({ candId: '', date: '', time: '', venue: '', mode: 'In-person' }); const [pick, setPick] = useState('');
 
   const cands = hr.candidates; const cand = id => cands.find(c => c.id === id);
   const vac = id => hr.vacancies.find(v => v.id === id);
-  const upcoming = hr.interviews.filter(i => i.status === 'Scheduled');
-  const done = hr.interviews.filter(i => i.status === 'Completed');
   const MAX = maxScore(hr.checklist);
+  const done = hr.interviews.filter(i => i.status === 'Completed');
 
-  function saveSched() { if (!form.candId || !form.date) return; scheduleInterview({ ...form, vacId: cand(form.candId)?.vacId, panel: '', scores: {}, remarks: '', decision: '' }); setSched(false); setForm({ candId: '', date: '', time: '', venue: '', mode: 'In-person' }); }
+  // One row per person: invited (invite sent) or scheduled, and not yet scored
+  const upcoming = cands.filter(c => !c.hired && c.status !== 'Rejected' && (c.status === 'Interview Scheduled' || hr.interviews.some(i => i.candId === c.id && i.status === 'Scheduled')) && !done.some(i => i.candId === c.id && ['Recommended', 'Rejected'].includes(c.status)))
+    .map(c => ({ c, iv: hr.interviews.find(i => i.candId === c.id && i.status === 'Scheduled'), app: (hr.applications || []).find(a => a.id === c.appId) }));
+  const selectable = cands.filter(c => !['Rejected', 'Hired'].includes(c.status));
+
+  function openSched(c) { const iv = hr.interviews.find(i => i.candId === c?.id && i.status === 'Scheduled'); setForm({ candId: c?.id || '', date: iv?.date || '', time: iv?.time || '', venue: iv?.venue || '', mode: iv?.mode || 'In-person' }); setSched({ cand: c || null }); }
+  function saveSched() { if (!form.candId || !form.date) return; scheduleInterview({ ...form, vacId: cand(form.candId)?.vacId }); setSched(null); }
 
   return (
     <div className="p-6">
       <PageHeader title="Interviews" subtitle={`${upcoming.length} upcoming · ${done.length} completed · scored out of ${MAX}`}
-        actions={<><Button variant="outline" onClick={() => setCl(hr.checklist.map(c => ({ ...c })))}>⚙ Checklist</Button><Button variant="outline" onClick={() => setPicker(true)}>▶ Start Interview</Button><Button onClick={() => setSched(true)}>+ Schedule</Button></>} />
+        actions={<><Button variant="outline" onClick={() => setCl(hr.checklist.map(c => ({ ...c })))}>⚙ Checklist</Button><Button variant="outline" onClick={() => setPicker(true)}>▶ Start Interview</Button><Button onClick={() => openSched(null)}>+ Schedule</Button></>} />
       <div className="grid grid-cols-4 gap-3 mb-5">
-        <Kpi label="Upcoming" value={upcoming.length} note="Scheduled" color="#1A5FB4" /><Kpi label="Completed" value={done.length} note="Scored" />
-        <Kpi label="Recommended" value={done.filter(i => i.decision === 'Recommended').length} note="Ready to hire" color="#166534" /><Kpi label="Hired" value={cands.filter(c => c.hired).length} note="Became staff" color="#6D28D9" />
+        <Kpi label="Upcoming" value={upcoming.length} note="Invited / scheduled" color="#1A5FB4" /><Kpi label="Completed" value={done.length} note="Scored" />
+        <Kpi label="Recommended" value={done.filter(i => i.decision === 'Recommended' && !cand(i.candId)?.hired).length} note="Ready to hire" color="#166534" /><Kpi label="Hired" value={cands.filter(c => c.hired).length} note="Became staff" color="#6D28D9" />
       </div>
 
-      {upcoming.length > 0 && <><div className="text-[12px] font-bold text-[#AAA] uppercase tracking-wider mb-2">Upcoming</div>
-        {upcoming.map(i => { const c = cand(i.candId); return (
-          <div key={i.id} className="bg-white border border-[#C8202E] rounded-[10px] p-4 mb-2 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-[8px] bg-[#FEF4F4] flex items-center justify-center text-[18px]">🗓</div>
-            <div className="flex-1"><div className="text-[13.5px] font-bold text-[#111]">{c?.name || i.candId}</div><div className="text-[11.5px] text-[#777]">{vac(i.vacId)?.subj} Teacher · {i.date} {i.time} · {i.venue || i.mode}</div></div>
-            <Badge variant="blue">Scheduled</Badge><Button size="sm" onClick={() => setScore({ id: i.id, cand: c })}>Score Interview →</Button></div>); })}</>}
+      <div className="text-[12px] font-bold text-[#AAA] uppercase tracking-wider mb-2">Upcoming</div>
+      {!upcoming.length && <div className="bg-white border border-[#E4E4E4] rounded-[10px] p-8 text-center text-[#AAA] mb-4">No upcoming interviews. Shortlist an applicant and send the interview invite from <b>Applications</b> — they will appear here.</div>}
+      {upcoming.map(({ c, iv, app }) => (
+        <div key={c.id} className="bg-white border border-[#C8202E] rounded-[10px] p-4 mb-2 flex items-center gap-3 shadow-[0_1px_4px_rgba(0,0,0,.07)]">
+          <div className="w-10 h-10 rounded-[8px] bg-[#FEF4F4] flex items-center justify-center text-[18px] flex-shrink-0">🗓</div>
+          <div className="flex-1 min-w-0">
+            <div className="text-[13.5px] font-bold text-[#111]">{c.name} <span className="font-normal text-[#AAA] text-[12px]">· CV score {c.score}</span></div>
+            <div className="text-[11.5px] text-[#777]">{vac(c.vacId)?.subj} Teacher · {iv ? <b className="text-[#111]">📅 {iv.date}{iv.time ? ' ' + iv.time : ''}{iv.venue ? ' · ' + iv.venue : ''} ({iv.mode})</b> : <span className="text-[#B45309] font-semibold">interview date not set yet</span>}</div>
+            {app?.inviteSent && <div className="text-[11px] text-[#C8202E] font-semibold mt-0.5">✓ Invite sent {new Date(app.inviteSentAt).toLocaleDateString('en-IN')}</div>}
+          </div>
+          <Badge variant="blue">{iv ? 'Scheduled' : 'Invited'}</Badge>
+          <Button size="sm" variant="outline" onClick={() => openSched(c)}>{iv ? '↻ Reschedule' : '📅 Set date & time'}</Button>
+          <Button size="sm" onClick={() => setScore({ id: iv?.id || null, cand: c })}>Score Interview →</Button>
+        </div>))}
 
       {done.length > 0 && <div className="mt-5"><div className="text-[12px] font-bold text-[#AAA] uppercase tracking-wider mb-2">Completed</div>
         <div className="bg-white border border-[#E4E4E4] rounded-[10px] overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,.07)]"><table className="w-full border-collapse text-[13px]">
@@ -74,11 +88,10 @@ export default function Interviews({ hr, scheduleInterview, updateInterview, set
               <td className="px-4 py-2.5"><Badge variant={i.decision === 'Recommended' ? 'green' : i.decision === 'Rejected' ? 'red' : 'amber'}>{i.decision || '—'}</Badge></td>
               <td className="px-4 py-2.5 text-[#555] max-w-[200px] truncate">{i.remarks || i.feedback}</td>
               <td className="px-4 py-2.5 whitespace-nowrap">
-                {c?.hired ? <Button size="sm" variant="outline" onClick={() => setLetter(c)}>📄 Offer Letter</Button>
+                {c?.hired ? <><Badge variant="green">✓ Hired</Badge> <Button size="sm" variant="outline" onClick={() => setLetter(c)}>📄 Offer Letter</Button></>
                   : i.decision === 'Recommended' && c ? <Button size="sm" onClick={() => setHire(c)}>✓ Hire</Button>
                   : <button onClick={() => setScore({ id: i.id, cand: c })} className="text-[11px] font-semibold text-[#C8202E] underline cursor-pointer bg-none border-none">View / edit</button>}
               </td></tr>); })}</tbody></table></div></div>}
-      {!upcoming.length && !done.length && <div className="bg-white border border-[#E4E4E4] rounded-[10px] p-12 text-center text-[#AAA]">No interviews yet</div>}
 
       {score && <ScoreModal hr={hr} iv={hr.interviews.find(i => i.id === score.id)} cand={score.cand} onClose={() => setScore(null)} onSave={(id, data) => { saveInterviewResult(id, score.cand.id, data); setScore(null); }} />}
       {cl && <ChecklistModal list={cl} setList={setCl} onClose={() => setCl(null)} onSave={() => { setChecklist(cl.filter(c => c.crit.trim()).map(c => ({ ...c, crit: c.crit.trim(), max: Math.max(1, +c.max || 1) }))); setCl(null); }} />}
@@ -88,15 +101,16 @@ export default function Interviews({ hr, scheduleInterview, updateInterview, set
         <iframe title="Offer letter" srcDoc={offerLetterHtml(letter.offerLetter, vac(letter.vacId))} className="w-full h-[420px] border border-[#E4E4E4] rounded-[8px]" />
         <p className="text-[11.5px] text-[#AAA] mt-2">The letter wording is a general template — please review it before issuing.</p></Modal>}
 
-      <Modal open={sched} onClose={() => setSched(false)} title="Schedule Interview" footer={<><Button variant="outline" onClick={() => setSched(false)}>Cancel</Button><Button onClick={saveSched}>Schedule</Button></>}>
+      {sched && <Modal open onClose={() => setSched(null)} title={sched.cand ? `Interview date — ${sched.cand.name}` : 'Schedule Interview'} subtitle={sched.cand ? 'Updates the existing interview — no duplicate is created' : 'Pick a shortlisted candidate'}
+        footer={<><Button variant="outline" onClick={() => setSched(null)}>Cancel</Button><Button onClick={saveSched}>Save</Button></>}>
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Candidate *" className="col-span-2"><select value={form.candId} onChange={e => setForm(f => ({ ...f, candId: e.target.value }))} className={inputCls}><option value="">— Select —</option>{cands.filter(c => !['Rejected', 'Hired'].includes(c.status)).map(c => <option key={c.id} value={c.id}>{c.name} ({vac(c.vacId)?.subj})</option>)}</select></Field>
+          <Field label="Candidate *" className="col-span-2"><select value={form.candId} disabled={!!sched.cand} onChange={e => setForm(f => ({ ...f, candId: e.target.value }))} className={inputCls}><option value="">— Select —</option>{selectable.map(c => <option key={c.id} value={c.id}>{c.name} ({vac(c.vacId)?.subj})</option>)}</select></Field>
           <Field label="Date *"><input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} className={inputCls} /></Field>
           <Field label="Time"><input type="time" value={form.time} onChange={e => setForm(f => ({ ...f, time: e.target.value }))} className={inputCls} /></Field>
           <Field label="Venue"><input value={form.venue} onChange={e => setForm(f => ({ ...f, venue: e.target.value }))} className={inputCls} /></Field>
           <Field label="Mode"><select value={form.mode} onChange={e => setForm(f => ({ ...f, mode: e.target.value }))} className={inputCls}><option>In-person</option><option>Online</option></select></Field>
-        </div></Modal>
-      <Modal open={picker} onClose={() => setPicker(false)} title="Start Interview" subtitle="Interview a candidate now (no scheduling needed)" footer={<><Button variant="outline" onClick={() => setPicker(false)}>Cancel</Button><Button onClick={() => { if (pick) { setScore({ id: null, cand: cand(pick) }); setPicker(false); } }}>Start →</Button></>}>
+        </div></Modal>}
+      <Modal open={picker} onClose={() => setPicker(false)} title="Start Interview" subtitle="Interview a candidate now (no scheduling needed)" footer={<><Button variant="outline" onClick={() => setPicker(false)}>Cancel</Button><Button onClick={() => { if (pick) { const c = cand(pick); setScore({ id: hr.interviews.find(i => i.candId === pick && i.status === 'Scheduled')?.id || null, cand: c }); setPicker(false); } }}>Start →</Button></>}>
         <Field label="Candidate"><select value={pick} onChange={e => setPick(e.target.value)} className={inputCls}><option value="">— Select —</option>{cands.filter(c => !c.hired).map(c => <option key={c.id} value={c.id}>{c.name} — {vac(c.vacId)?.subj} ({c.status})</option>)}</select></Field>
         {pick && <div className="mt-3 bg-[#F8F8F8] rounded-[8px] p-3 text-[12.5px] text-[#555]">{cand(pick)?.qual} · {cand(pick)?.exp} · CV score {cand(pick)?.score}</div>}</Modal>
     </div>

@@ -7,7 +7,7 @@ export const SEED = {
     {id:'V003',subj:'Science',    dept:'Secondary',qual:'M.Sc Science + B.Ed',exp:'2+ years',skills:'Lab skills, STEM',count:1,deadline:'2026-12-01',priority:'Normal',posted:'2026-10-01',status:'Active'},
   ],
   candidates: [
-    {id:'C001',vacId:'V001',name:'Priya Suresh', qual:'M.Sc Maths, B.Ed',    exp:'5 yrs',contact:'+91 94470 11201',score:88,status:'Shortlisted',  notes:'Strong conceptual clarity. Good demo lesson.'},
+    {id:'C001',vacId:'V001',name:'Priya Suresh', qual:'M.Sc Maths, B.Ed',    exp:'5 yrs',contact:'+91 94470 11201',score:88,status:'Interview Scheduled',  notes:'Strong conceptual clarity. Good demo lesson.'},
     {id:'C002',vacId:'V001',name:'Anoop Varma',  qual:'M.Sc Maths, B.Ed',    exp:'3 yrs',contact:'+91 94470 11202',score:76,status:'Shortlisted',  notes:'Adequate. Needs classroom presence work.'},
     {id:'C003',vacId:'V001',name:'Sijo Thomas',  qual:'B.Sc Maths',           exp:'1 yr', contact:'+91 94470 11203',score:48,status:'Rejected',     notes:'Under-qualified.'},
     {id:'C004',vacId:'V002',name:'Reshma K.',    qual:'MA English, B.Ed',     exp:'6 yrs',contact:'+91 94470 11204',score:91,status:'Recommended',  notes:'Excellent creative writing. Strong grammar.'},

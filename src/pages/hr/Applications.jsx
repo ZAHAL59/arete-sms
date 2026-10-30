@@ -4,7 +4,7 @@ import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
 import Collapsible from '../../components/ui/Collapsible';
-import { Kpi, Field, inputCls } from '../../components/ui/Kit';
+import { Field, inputCls } from '../../components/ui/Kit';
 
 const STATUS_VARIANT = { 'Pending Review': 'amber', 'Needs Review': 'amber', Shortlisted: 'green', Rejected: 'red' };
 const scoreColor = n => n >= 75 ? '#166534' : n >= 50 ? '#B45309' : '#DC2626';
@@ -12,33 +12,31 @@ const dateFmt = iso => iso ? new Date(iso).toLocaleDateString('en-IN', { day: '2
 
 export default function Applications({ hr, shortlist, reject, restore, markInviteSent, initialVac = '' }) {
   const [vac, setVac] = useState(initialVac); const [st, setSt] = useState('');
-  const [detail, setDetail] = useState(null); const [invite, setInvite] = useState(null); const [msg, setMsg] = useState(''); const [copied, setCopied] = useState(false);
+  const [invite, setInvite] = useState(null); const [msg, setMsg] = useState(''); const [copied, setCopied] = useState(false);
   const apps = (hr.applications || []).slice().sort((a, b) => (b.appliedAt || '').localeCompare(a.appliedAt || ''));
   const list = apps.filter(a => (!vac || a.vacId === vac) && (!st || a.hrStatus === st));
   const vacancy = id => hr.vacancies.find(v => v.id === id) || { subj: id, qual: '—', exp: '—' };
-  const count = s => apps.filter(a => a.hrStatus === s).length;
-  const groups = Object.entries(list.reduce((m, a) => ((m[a.vacId] ||= []).push(a), m), {}));
-  const detailApp = apps.find(a => a.id === detail);
+    const groups = Object.entries(list.reduce((m, a) => ((m[a.vacId] ||= []).push(a), m), {}));
 
   const inviteText = a => `Dear ${a.name.split(' ')[0]}, you have been shortlisted for ${vacancy(a.vacId).subj} Teacher at Arete Model School. Please attend the interview — the date and time will be communicated shortly. Bring original certificates and photocopies. — HR, Arete Model School`;
   const openInvite = a => { setInvite(a); setMsg(inviteText(a)); setCopied(false); };
 
   return (
     <div className="p-6">
-      <PageHeader title="Applications Inbox" subtitle="Applications received from the public Careers page — grouped by vacancy"
+      <PageHeader title="Applications Inbox" subtitle="Candidates apply via the public careers page · applications arrive here automatically"
         actions={<>
-          <select value={vac} onChange={e => setVac(e.target.value)} className="px-2.5 py-1.5 border border-[#E4E4E4] rounded-[6px] text-[12.5px] outline-none focus:border-[#C8202E]"><option value="">All vacancies</option>{hr.vacancies.map(v => <option key={v.id} value={v.id}>{v.subj}</option>)}</select>
-          <select value={st} onChange={e => setSt(e.target.value)} className="px-2.5 py-1.5 border border-[#E4E4E4] rounded-[6px] text-[12.5px] outline-none focus:border-[#C8202E]"><option value="">All statuses</option>{['Pending Review', 'Shortlisted', 'Rejected'].map(s => <option key={s}>{s}</option>)}</select>
-          <a href="/careers" target="_blank" rel="noreferrer" className="px-3 py-2 border border-[#E4E4E4] rounded-[6px] text-[12.5px] font-semibold text-[#555] no-underline hover:bg-[#F8F8F8]">Open Careers Page ↗</a></>} />
-      <div className="grid grid-cols-4 gap-3 mb-5">
-        <Kpi label="Total Received" value={apps.length} note="All applications" /><Kpi label="Pending Review" value={count('Pending Review')} note="Need a decision" color="#B45309" />
-        <Kpi label="Shortlisted" value={count('Shortlisted')} note="In the interview pipeline" color="#166534" /><Kpi label="Rejected" value={count('Rejected')} note="Can be undone" color="#DC2626" />
+          <select value={vac} onChange={e => setVac(e.target.value)} className="px-2.5 py-1.5 border border-[#E4E4E4] rounded-[6px] text-[12.5px] outline-none focus:border-[#C8202E]"><option value="">All Vacancies</option>{hr.vacancies.map(v => <option key={v.id} value={v.id}>{v.subj}</option>)}</select>
+          <select value={st} onChange={e => setSt(e.target.value)} className="px-2.5 py-1.5 border border-[#E4E4E4] rounded-[6px] text-[12.5px] outline-none focus:border-[#C8202E]"><option value="">All Status</option>{['Pending Review', 'Shortlisted', 'Rejected'].map(s => <option key={s}>{s}</option>)}</select></>} />
+      <div className="flex items-center gap-4 bg-[#FEF4F4] border border-[#FECACA] rounded-[10px] px-4 py-3 mb-5">
+        <div className="text-[26px]">📥</div>
+        <div className="flex-1 text-[12.5px] text-[#555] leading-relaxed"><b className="text-[#9A1822] text-[14px]">Applications arrive here from the public Careers Page</b><br />Candidates visit the careers page, see your posted vacancies, fill in their details and upload their CV. Each submission lands here with an auto-score. HR reviews, shortlists or rejects, then proceeds to interview.</div>
+        <a href="/careers" target="_blank" rel="noreferrer" className="px-4 py-2 bg-[#C8202E] text-white text-[12.5px] font-bold rounded-[6px] no-underline whitespace-nowrap">Open Careers Page →</a>
       </div>
 
       {!list.length && <div className="bg-white border border-[#E4E4E4] rounded-[10px] text-center py-16 px-6">
         <div className="text-[40px] mb-3">📭</div><div className="text-[16px] font-bold text-[#555] mb-1">{apps.length ? 'No applications match' : 'No applications yet'}</div>
         <div className="text-[13.5px] text-[#AAA] mb-5">{apps.length ? 'Try a different vacancy or status.' : 'Post a vacancy and share the careers page link with candidates.'}</div>
-        {!apps.length && <a href="/careers" target="_blank" rel="noreferrer" className="inline-block px-4 py-2 bg-[#C8202E] text-white text-[12.5px] font-semibold rounded-[6px] no-underline">Open Careers Page →</a>}</div>}
+</div>}
 
       {groups.map(([vid, items]) => {
         const v = vacancy(vid); const n = s => items.filter(a => a.hrStatus === s).length;
@@ -49,7 +47,7 @@ export default function Applications({ hr, shortlist, reject, restore, markInvit
             <div className="p-3 space-y-3 border-t border-[#E4E4E4]">{items.map(a => {
               const col = scoreColor(a.score), hasCv = a.cvFileName && a.cvFileName !== 'Not uploaded', pending = ['Pending Review', 'Needs Review'].includes(a.hrStatus);
               return (
-                <div key={a.id} className={`rounded-[10px] border p-4 ${a.hrStatus === 'Rejected' ? 'border-[#FECACA] bg-[#FFFAFA] opacity-80' : a.hrStatus === 'Shortlisted' ? 'border-[#BBF7D0] bg-[#F6FEF9]' : 'border-[#E4E4E4] bg-white'}`}>
+                <div key={a.id} className={`rounded-[10px] border p-4 ${a.hrStatus === 'Rejected' ? 'border-[#FECACA] bg-[#FFFAFA] opacity-80' : a.hrStatus === 'Shortlisted' ? 'border-[#E4E4E4] border-l-[3px] border-l-[#C8202E] bg-white' : 'border-[#E4E4E4] bg-white'}`}>
                   <div className="flex items-center gap-3">
                     <div className="w-[46px] h-[46px] rounded-full flex items-center justify-center text-[17px] font-extrabold font-mono flex-shrink-0" style={{ background: col + '18', border: `2.5px solid ${col}`, color: col }} title="Auto-score">{a.score}</div>
                     <div className="flex-1 min-w-0"><div className="text-[14px] font-bold text-[#111]">{a.name}</div><div className="text-[12px] text-[#777] mt-0.5">{a.qual}{a.spec ? ' · ' + a.spec : ''} · {a.exp}</div><div className="text-[11.5px] text-[#AAA] mt-0.5">📞 {a.phone || '—'}{a.email ? ' · ✉ ' + a.email : ''}</div></div>
@@ -62,21 +60,14 @@ export default function Applications({ hr, shortlist, reject, restore, markInvit
                   <div className="flex items-center gap-2 mt-3 pt-3 border-t border-[#E4E4E4]">
                     {pending && <><Button size="sm" onClick={() => shortlist(a.id)}>✓ Shortlist</Button><Button size="sm" variant="outline" onClick={() => reject(a.id)}>✗ Reject</Button></>}
                     {a.hrStatus === 'Shortlisted' && !a.inviteSent && <Button size="sm" variant="outline" onClick={() => openInvite(a)}>📧 Send Interview Invite</Button>}
-                    {a.hrStatus === 'Shortlisted' && a.inviteSent && <span className="text-[11.5px] text-[#166534] font-semibold">✓ Invite sent · {dateFmt(a.inviteSentAt)}</span>}
+                    {a.hrStatus === 'Shortlisted' && a.inviteSent && <span className="text-[11.5px] text-[#C8202E] font-semibold">✓ Invite sent · {dateFmt(a.inviteSentAt)}</span>}
                     {a.hrStatus === 'Rejected' && <Button size="sm" variant="outline" onClick={() => restore(a.id)}>↩ Undo Reject</Button>}
-                    <button onClick={() => setDetail(a.id)} className="text-[11.5px] font-semibold text-[#C8202E] underline cursor-pointer bg-none border-none ml-1">Details</button>
                     <span className="ml-auto text-[11px] text-[#AAA] font-mono">Ref: {a.id}</span>
                   </div>
                 </div>);
             })}</div>
           </Collapsible>);
       })}
-
-      {detailApp && <Modal open onClose={() => setDetail(null)} size="lg" title={detailApp.name} subtitle={`${vacancy(detailApp.vacId).subj} Teacher · ${detailApp.id}`} footer={<Button variant="outline" onClick={() => setDetail(null)}>Close</Button>}>
-        <div className="grid grid-cols-2 gap-2">{[['Phone', detailApp.phone], ['Email', detailApp.email], ['Date of Birth', detailApp.dob], ['Address', detailApp.address], ['Qualification', detailApp.qual], ['Specialisation', detailApp.spec], ['Experience', detailApp.exp], ['Current / last employer', detailApp.employer], ['Applied', dateFmt(detailApp.appliedAt)], ['Auto-score', `${detailApp.score}/100 (rough guide)`]].map(([l, v]) => (
-          <div key={l} className="bg-[#F8F8F8] p-2.5 rounded-[6px]"><div className="text-[10px] font-bold text-[#AAA] uppercase tracking-wider mb-1">{l}</div><div className="text-[13px] text-[#333] break-words">{v || '—'}</div></div>))}</div>
-        {detailApp.cover && <div className="mt-3"><div className="text-[10px] font-bold text-[#AAA] uppercase tracking-wider mb-1">Cover note</div><div className="text-[13px] text-[#333] leading-relaxed bg-[#F8F8F8] p-3 rounded-[6px]">{detailApp.cover}</div></div>}
-        <div className="text-[12px] text-[#777] mt-3">📎 CV: {detailApp.cvFileName}{detailApp.cvFileName !== 'Not uploaded' && <span className="text-[#AAA]"> — file name only; storing the file itself needs a backend</span>}</div></Modal>}
 
       {invite && <Modal open onClose={() => setInvite(null)} size="lg" title={`Interview invitation — ${invite.name}`} subtitle="Sending is not automatic: copy the message, send it yourself, then mark it as sent"
         footer={<><Button variant="outline" onClick={() => setInvite(null)}>Cancel</Button><Button variant="outline" onClick={() => { navigator.clipboard?.writeText(msg); setCopied(true); }}>{copied ? '✓ Copied' : '📋 Copy message'}</Button><Button onClick={() => { markInviteSent(invite.id, msg); setInvite(null); }}>✓ Mark invite as sent</Button></>}>

@@ -20,7 +20,14 @@ export default function useHR() {
     updateVacancy: (id, f)   => update(d => { const i=d.vacancies.findIndex(x=>x.id===id); if(i>=0) d.vacancies[i]={...d.vacancies[i],...f}; return d; }),
     addCandidate:  (c)       => update(d => { d.candidates.push({...c, id:'C'+String(d.candidates.length+1).padStart(3,'0'), status:'Shortlisted'}); return d; }),
     updateCandidate:(id,f)   => update(d => { const i=d.candidates.findIndex(x=>x.id===id); if(i>=0) d.candidates[i]={...d.candidates[i],...f}; return d; }),
-    scheduleInterview:(intvw)=> update(d => { d.interviews.push({...intvw, id:'I'+String(d.interviews.length+1).padStart(3,'0'), status:'Scheduled', scores:{}, remarks:'', decision:''}); const c = d.candidates.find(x => x.id === intvw.candId); if (c && ['Shortlisted','Pending'].includes(c.status)) c.status = 'Interview Scheduled'; return d; }),
+    scheduleInterview:(intvw)=> update(d => {
+      const c = d.candidates.find(x => x.id === intvw.candId);
+      const ex = d.interviews.find(x => x.candId === intvw.candId && x.status === 'Scheduled');
+      if (ex) Object.assign(ex, { date: intvw.date, time: intvw.time, venue: intvw.venue, mode: intvw.mode, panel: intvw.panel ?? ex.panel });            // reschedule
+      else d.interviews.push({ ...intvw, vacId: intvw.vacId || c?.vacId, id:'I'+Date.now().toString().slice(-6), status:'Scheduled', scores:{}, remarks:'', decision:'' });
+      if (c && ['Shortlisted','Pending','Interview Scheduled'].includes(c.status)) c.status = 'Interview Scheduled';
+      return d;
+    }),
     updateInterview:(id,f)   => update(d => { const i=d.interviews.findIndex(x=>x.id===id); if(i>=0) d.interviews[i]={...d.interviews[i],...f}; return d; }),
     addTraining:   (t)       => update(d => { d.training.push({...t, id:'TR'+String(d.training.length+1).padStart(3,'0'), attendance:{}, status:'Upcoming'}); return d; }),
     markTrainingAtt:(tId,sId,status) => update(d => { const t=d.training.find(x=>x.id===tId); if(t) t.attendance[sId]=status; return d; }),

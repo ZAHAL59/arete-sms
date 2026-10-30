@@ -4,22 +4,20 @@ import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
 import Collapsible from '../../components/ui/Collapsible';
-import { Field, inputCls, Th } from '../../components/ui/Kit';
-import { CAND_STATUS_VARIANT, DEPARTMENTS, EXP_OPTIONS } from './constants';
+import { Field, inputCls } from '../../components/ui/Kit';
+import { DEPARTMENTS, EXP_OPTIONS } from './constants';
 
 const blankVac = () => ({ subj: '', dept: DEPARTMENTS[1], qual: '', exp: EXP_OPTIONS[0], skills: '', count: 1, deadline: '', priority: 'Normal', status: 'Active' });
 
-export default function Vacancies({ hr, addVacancy, updateVacancy, addCandidate, updateCandidate, go }) {
+export default function Vacancies({ hr, addVacancy, updateVacancy, go }) {
   const [vf, setVf] = useState(null);                 // null = closed, {id?,...} = open
-  const [newCandOpen, setNewCandOpen] = useState(null); const [err, setErr] = useState('');
-  const [candForm, setCandForm] = useState({ name: '', qual: '', exp: '', contact: '', score: '', notes: '' });
+  const [err, setErr] = useState('');
   const set = (k, v) => setVf(f => ({ ...f, [k]: v }));
 
   const apps = hr.applications || [];
-  const notRejected = hr.candidates.filter(c => c.status !== 'Rejected');
   const strip = [
-    ['Vacancies Posted', hr.vacancies.filter(v => v.status === 'Active').length], ['Applications', apps.length], ['Shortlisted', notRejected.length],
-    ['Interviewed', hr.interviews.filter(i => i.status === 'Completed').length], ['Recommended', hr.candidates.filter(c => ['Recommended', 'Hired'].includes(c.status)).length],
+    ['Vacancies Posted', hr.vacancies.filter(v => v.status === 'Active').length], ['Applications', apps.length], ['Shortlisted', hr.candidates.filter(c => c.status === 'Shortlisted').length],
+    ['Interviewed', hr.interviews.length], ['Recommended', hr.candidates.filter(c => c.status === 'Recommended').length],
   ];
 
   function saveVac() {
@@ -29,15 +27,9 @@ export default function Vacancies({ hr, addVacancy, updateVacancy, addCandidate,
     if (vf.id) updateVacancy(vf.id, { ...data, status: vf.status }); else addVacancy(data);
     setVf(null); setErr('');
   }
-  function saveCand() {
-    if (!candForm.name.trim() || !newCandOpen) return;
-    addCandidate({ ...candForm, name: candForm.name.trim(), vacId: newCandOpen, score: Math.min(100, parseInt(candForm.score) || 0) });
-    setCandForm({ name: '', qual: '', exp: '', contact: '', score: '', notes: '' }); setNewCandOpen(null);
-  }
-
   return (
     <div className="p-6">
-      <PageHeader title="Vacancies & Recruitment" subtitle={`${hr.vacancies.filter(v => v.status === 'Active').length} open position(s) · CVs arrive from the public Careers page`}
+      <PageHeader title="Vacancies & Recruitment" subtitle="Post a vacancy → CVs are filed against it → shortlist → interview → hire"
         actions={<Button onClick={() => { setVf(blankVac()); setErr(''); }}>+ Post Vacancy</Button>} />
 
       {/* recruitment funnel */}
@@ -52,9 +44,8 @@ export default function Vacancies({ hr, addVacancy, updateVacancy, addCandidate,
       {!hr.vacancies.length && <div className="bg-white border border-[#E4E4E4] rounded-[10px] p-12 text-center text-[#AAA]">No vacancies posted yet. Click "+ Post Vacancy" to start.</div>}
       {hr.vacancies.map(v => {
         const cands = hr.candidates.filter(c => c.vacId === v.id);
-        const received = apps.filter(a => a.vacId === v.id).length;
-        const shortlisted = cands.filter(c => c.status !== 'Rejected').length;
-        const interviewed = hr.interviews.filter(i => i.vacId === v.id && i.status === 'Completed').length;
+        const shortlisted = cands.filter(c => c.status === 'Shortlisted').length;
+        const interviewed = hr.interviews.filter(i => i.vacId === v.id).length;
         const hired = cands.filter(c => c.hired).length;
         return (
           <Collapsible key={v.id} defaultOpen className={`mb-3 !border-l-[4px] ${v.priority === 'Urgent' ? '!border-l-[#9A1822]' : '!border-l-[#C8202E]'}`}
@@ -68,21 +59,10 @@ export default function Vacancies({ hr, addVacancy, updateVacancy, addCandidate,
             <div className="border-t border-[#E4E4E4] grid grid-cols-3 gap-5 p-4">
               <div><div className="text-[10.5px] text-[#AAA] mb-1">Requirements</div><div className="text-[13px] leading-relaxed text-[#333]">{v.qual} · {v.exp}<div className="text-[12px] text-[#777]">{v.skills || '—'}</div></div></div>
               <div className="col-span-2 flex items-center gap-6">
-                {[['Applications', received, '#111'], ['Shortlisted', shortlisted, '#C8202E'], ['Interviewed', interviewed, '#6D28D9']].map(([l, n, c]) => <div key={l} className="text-center"><div className="text-[22px] font-extrabold" style={{ color: c }}>{n}</div><div className="text-[11px] text-[#AAA]">{l}</div></div>)}
-                <div className="ml-auto flex gap-2"><Button size="sm" variant="outline" onClick={() => go('applications', v.id)}>View CVs →</Button><Button size="sm" variant="outline" onClick={() => setNewCandOpen(v.id)}>+ Add CV</Button></div>
+                {[['CVs Filed', cands.length, '#111'], ['Shortlisted', shortlisted, '#C8202E'], ['Interviewed', interviewed, '#9A1822']].map(([l, n, c]) => <div key={l} className="text-center"><div className="text-[22px] font-extrabold" style={{ color: c }}>{n}</div><div className="text-[11px] text-[#AAA]">{l}</div></div>)}
+                <div className="ml-auto"><Button size="sm" variant="outline" onClick={() => go('applications', v.id)}>View CVs →</Button></div>
               </div>
             </div>
-            {cands.length > 0 && <table className="w-full border-collapse text-[13px] border-t border-[#E4E4E4]">
-              <thead><tr><Th>Candidate</Th><Th>Qualification</Th><Th>Experience</Th><Th>Score</Th><Th>Status</Th><Th>Notes</Th><Th /></tr></thead>
-              <tbody>{cands.map(c => (
-                <tr key={c.id} className="border-b border-[#E4E4E4] last:border-b-0 hover:bg-[#F8F8F8]">
-                  <td className="px-4 py-2.5 font-semibold text-[#111]">{c.name}</td><td className="px-4 py-2.5 text-[#555]">{c.qual}</td><td className="px-4 py-2.5 text-[#555]">{c.exp}</td>
-                  <td className="px-4 py-2.5"><div className="flex items-center gap-2"><div className="h-1.5 bg-[#E4E4E4] rounded-full w-12 overflow-hidden"><div className="h-full rounded-full" style={{ width: `${c.score}%`, background: c.score >= 80 ? '#166534' : c.score >= 60 ? '#B45309' : '#DC2626' }} /></div><span className="font-bold">{c.score}</span></div></td>
-                  <td className="px-4 py-2.5"><Badge variant={CAND_STATUS_VARIANT[c.status] || 'grey'}>{c.status}</Badge></td>
-                  <td className="px-4 py-2.5 text-[#555] text-[12px] max-w-[160px] truncate">{c.notes}</td>
-                  <td className="px-4 py-2.5 whitespace-nowrap">{!['Recommended', 'Rejected', 'Hired'].includes(c.status) && <button onClick={() => updateCandidate(c.id, { status: 'Recommended' })} className="text-[10.5px] font-semibold text-[#166534] underline cursor-pointer bg-none border-none">Recommend</button>}
-                    {!['Rejected', 'Hired'].includes(c.status) && <button onClick={() => updateCandidate(c.id, { status: 'Rejected' })} className="text-[10.5px] font-semibold text-[#DC2626] underline cursor-pointer bg-none border-none ml-2">Reject</button>}</td>
-                </tr>))}</tbody></table>}
           </Collapsible>
         );
       })}
@@ -104,14 +84,6 @@ export default function Vacancies({ hr, addVacancy, updateVacancy, addCandidate,
         {vf.id && vf.status !== 'Active' && <div className="mt-3 text-[12px] text-[#B45309] bg-[#FFFBEB] rounded-[6px] p-2.5">Only Active vacancies are shown on the public Careers page.</div>}
       </Modal>}
 
-      {/* Manual CV */}
-      <Modal open={!!newCandOpen} onClose={() => setNewCandOpen(null)} title="Add Candidate CV" subtitle={newCandOpen ? `For: ${hr.vacancies.find(v => v.id === newCandOpen)?.subj} Teacher — for CVs received by email or in person` : ''}
-        footer={<><Button variant="outline" onClick={() => setNewCandOpen(null)}>Cancel</Button><Button onClick={saveCand}>Add Candidate</Button></>}>
-        <div className="grid grid-cols-2 gap-3">
-          {[['Name *', 'name'], ['Qualification', 'qual'], ['Experience', 'exp'], ['Phone / Email', 'contact'], ['Score (0-100)', 'score']].map(([l, k]) => <Field key={k} label={l}><input value={candForm[k] || ''} onChange={e => setCandForm(f => ({ ...f, [k]: e.target.value }))} className={inputCls} /></Field>)}
-          <Field label="Initial Notes" className="col-span-2"><textarea rows={2} value={candForm.notes || ''} onChange={e => setCandForm(f => ({ ...f, notes: e.target.value }))} className={inputCls + ' resize-none'} /></Field>
-        </div>
-      </Modal>
     </div>
   );
 }

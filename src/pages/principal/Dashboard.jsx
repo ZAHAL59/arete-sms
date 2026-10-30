@@ -3,7 +3,7 @@ import useStore from '../../store/useStore';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import Collapsible from '../../components/ui/Collapsible';
-import { getStudentDue } from '../finance/constants';
+import { getStudentDue, countsTowardDue } from '../finance/constants';
 import { snapshot, setLeaveStatus, setOutingStatus, docStatus, loanStatus, staffAttOn, onLeaveOn } from './bridge';
 import { uncovered } from './cover';
 import { StudentPanel, EditStudentModal } from './Students';
@@ -30,7 +30,7 @@ export default function Dashboard({ p, go, openRoute }) {
   const pending = needCover.length + pendingLeaves.length + pendingApps.length + pendingOutings.length + openComplaints.length;
 
   const totalDue = db.students.reduce((a, s) => a + getStudentDue(s), 0);
-  const collected = db.payments.filter(p => p.studentId).reduce((a, p) => a + p.amount, 0);
+  const collected = db.payments.filter(p => p.studentId && countsTowardDue(p)).reduce((a, p) => a + p.amount, 0);
   const pct = totalDue ? Math.round(collected / totalDue * 1000) / 10 : 0;
   const todayLogs = Object.entries(attLog).filter(([k]) => k.endsWith(TODAY)).flatMap(([, l]) => Object.values(l));
   const todayAtt = todayLogs.length ? Math.round(todayLogs.filter(v => v === 'P').length / todayLogs.length * 100) : null;

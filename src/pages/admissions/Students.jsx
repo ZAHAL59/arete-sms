@@ -8,7 +8,7 @@ import { Kpi, Th } from '../../components/ui/Kit';
 import { COLORS } from '../teacher/constants';
 import { loadHostel } from '../hostel/constants';
 import { loadCampus, loanStatus, prettyDate } from '../campus/constants';
-import { getStudentDue, fmt } from '../finance/constants';
+import { getStudentDue, fmt, paidTowardDue } from '../finance/constants';
 import { downloadCsv } from '../principal/constants';
 import StudentFormModal from './modals/StudentFormModal';
 
@@ -18,7 +18,7 @@ export function StudentDetail({ student, onClose, onEdit }) {
   const route = db.routes.find(r => r.id === s.busRoute);
   const room = useMemo(() => loadHostel().rooms.find(r => r.inmates.includes(s.name)), [s.name]);
   const books = useMemo(() => loadCampus().books.filter(b => b.issuedTo === s.id), [s.id]);
-  const pays = db.payments.filter(p => p.studentId === s.id); const paid = pays.reduce((a, p) => a + p.amount, 0), due = getStudentDue(s);
+  const pays = db.payments.filter(p => p.studentId === s.id); const paid = paidTowardDue(db.payments, s.id), due = getStudentDue(s);
   const [copied, setCopied] = useState(false);
   const rows = [['Learning style', s.learningStyle || '—'], ['Diet', s.diet || '—'], ['Travel', s.boarding ? 'Boarding' : route ? 'Bus' : 'Own transport'], ['Health', s.health || 'None'], ['Special needs', s.needs || 'None'], ['Parent', `${s.parentName || '—'} ${s.parentPhone || ''}`]];
   const summary = `${s.name} · ${s.cls} ${s.section} · Parent: ${s.parentName} ${s.parentPhone} · Learning style: ${s.learningStyle || '—'} · Diet: ${s.diet || '—'} · Health: ${s.health || 'None'} · Needs: ${s.needs || 'None'}`;

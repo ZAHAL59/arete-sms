@@ -1,6 +1,6 @@
 export const FINANCE_KEY = 'ARETE_FINANCE_v1';
 
-export const FEE_CATEGORIES = ['Term 1 Fee','Term 2 Fee','Term 3 Fee','Transport Fee','Hostel Fee','Hostel Monthly','Activity Fee','Admission Fee','Staff Salary','Other'];
+export const FEE_CATEGORIES = ['Term 1 Fee','Term 2 Fee','Term 3 Fee','Transport Fee','Hostel Fee','Hostel Monthly','Hostel Admission Fee','Hostel Caution Deposit','Hostel Mess Advance','Activity Fee','Admission Fee','Staff Salary','Other'];
 export const PAY_MODES = ['Online / UPI','Cash','Cheque','DD'];
 export const BUDGET_DEPTS = ['HR','Transport','Ops','Academic','Admin','Hostel'];
 
@@ -30,6 +30,16 @@ export function getFeeStructure() {
 }
 export function saveFeeStructure(fs) { try { localStorage.setItem(FS_KEY, JSON.stringify(fs)); } catch {} _fs = null; }
 export const termOf = r => (r.t1 || 0) + (r.t2 || 0) + (r.t3 || 0);
+
+// Money that is NOT part of the yearly fee: school admission fee, hostel admission fee, refundable deposits and advances.
+// These are collected and receipted, but must never be counted as "paid" against the annual fees.
+export function countsTowardDue(p) {
+  const c = p.category || '';
+  if (c === 'Admission Fee') return false;
+  if (c.startsWith('Hostel') && !['Hostel Monthly', 'Hostel Fee'].includes(c)) return false;
+  return true;
+}
+export const paidTowardDue = (payments, sid) => payments.filter(p => p.studentId === sid && countsTowardDue(p)).reduce((a, p) => a + p.amount, 0);
 
 // Annual amount due for a student: terms + activity, plus transport (bus riders) and hostel (boarders)
 export function getStudentDue(student) {

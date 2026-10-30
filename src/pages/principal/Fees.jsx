@@ -5,7 +5,7 @@ import FeeOverview from '../finance/FeeOverview';
 import StudentLedger from '../finance/StudentLedger';
 import PaymentHistory from '../finance/PaymentHistory';
 import Collapsible from '../../components/ui/Collapsible';
-import { getStudentDue } from '../finance/constants';
+import { getStudentDue, countsTowardDue } from '../finance/constants';
 import { Th } from '../../components/ui/Kit';
 import { fmt } from './constants';
 
@@ -16,7 +16,7 @@ export default function Fees() {
   const grades = [...new Set(db.students.map(s => s.cls))].sort((a, b) => parseInt(a.replace(/\D/g, '')) - parseInt(b.replace(/\D/g, '')));
   const rows = grades.map(g => {
     const sts = db.students.filter(s => s.cls === g), billed = sts.reduce((a, s) => a + getStudentDue(s), 0);
-    const col = allPayments.filter(p => sts.some(s => s.id === p.studentId)).reduce((a, p) => a + p.amount, 0);
+    const col = allPayments.filter(p => countsTowardDue(p) && sts.some(s => s.id === p.studentId)).reduce((a, p) => a + p.amount, 0);
     return { g, billed, col, pct: billed ? Math.round(col / billed * 100) : 0 };
   });
   const props = { allPayments, recordPayment };

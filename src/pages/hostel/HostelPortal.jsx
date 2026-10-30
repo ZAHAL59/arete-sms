@@ -67,8 +67,8 @@ export default function HostelPortal() {
         {view === 'admit'     && <Admission h={h} admitStudent={H.admitStudent} go={setView} />}
         {view === 'rooms'     && <Rooms h={h} removeInmate={H.removeInmate} go={setView} />}
         {view === 'inmates'   && <Inmates h={h} />}
-        {view === 'fees'      && <Fees />}
-        {view === 'mess'      && <Mess h={h} logCost={H.logCost} saveStock={H.saveStock} addStock={H.addStock} addOrder={H.addOrder} receiveOrder={H.receiveOrder} />}
+        {view === 'fees'      && <Fees h={h} setFeeHeads={H.setFeeHeads} />}
+        {view === 'mess'      && <Mess h={h} saveStock={H.saveStock} addStock={H.addStock} addOrder={H.addOrder} receiveOrder={H.receiveOrder} />}
         {view === 'menu'      && <Menu h={h} saveMenu={H.saveMenu} />}
         {view === 'outing'    && <Outing h={h} addOuting={H.addOuting} setOutingStatus={H.setOutingStatus} />}
         {view === 'incidents' && <Incidents h={h} addIncident={H.addIncident} resolveIncident={H.resolveIncident} />}

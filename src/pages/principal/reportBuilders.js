@@ -1,5 +1,5 @@
 // Pure report builders: (context, filters) -> { title, columns, rows, note }
-import { getStudentDue } from '../finance/constants';
+import { getStudentDue, paidTowardDue } from '../finance/constants';
 import { classLabel, TODAY } from './constants';
 import { loanStatus } from '../campus/constants';
 
@@ -21,7 +21,7 @@ export function feeReport(ctx, { from = '', to = '', grade = '' } = {}) {
   return { title: 'Fee Collection Statement', columns: ['Date', 'Receipt', 'Student', 'Class', 'Category', 'Mode', 'Amount (₹)'], rows };
 }
 export function studentReport(ctx, { grade = '' } = {}) {
-  const rows = ctx.db.students.filter(s => !grade || s.cls === grade).map(s => { const paid = ctx.payments.filter(p => p.studentId === s.id).reduce((a, p) => a + p.amount, 0);
+  const rows = ctx.db.students.filter(s => !grade || s.cls === grade).map(s => { const paid = paidTowardDue(ctx.payments, s.id);
     return [s.id, s.name, classLabel(s), s.parentName, s.parentPhone, s.boarding ? 'Boarding' : s.busRoute ? 'Bus' : 'Own', Math.max(0, getStudentDue(s) - paid)]; });
   return { title: 'Student Register', columns: ['ID', 'Name', 'Class', 'Guardian', 'Phone', 'Travel', 'Fee balance (₹)'], rows };
 }

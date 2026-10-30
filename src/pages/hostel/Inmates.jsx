@@ -7,6 +7,8 @@ import Modal from '../../components/ui/Modal';
 import { COLORS } from '../teacher/constants';
 import { MONTHLY_FEE, fmt } from './constants';
 import { getFeeStructure } from '../finance/constants';
+import { headStatus } from './hostelFees';
+import { DEFAULT_FEE_HEADS } from './constants';
 
 const monthName = ym => new Date(ym + '-01T00:00:00').toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
 const Info = ({ l, v }) => <div className="bg-[#F8F8F8] rounded-[6px] p-2.5"><div className="text-[10px] font-bold text-[#AAA] uppercase tracking-wider mb-0.5">{l}</div><div className="text-[12.5px] text-[#333] font-semibold break-words">{v || '—'}</div></div>;
@@ -21,7 +23,7 @@ export default function Inmates({ h }) {
 
   const profile = sel && (() => {
     const s = db.students.find(x => x.id === sel.id) || sel, rec = recOf(s);
-    const pays = db.payments.filter(p => p.studentId === s.id && ['Hostel Monthly', 'Hostel Fee'].includes(p.category)).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    const pays = db.payments.filter(p => p.studentId === s.id && (p.category || '').startsWith('Hostel')).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
     return (
       <Modal open onClose={() => setSel(null)} size="lg" title={s.name} subtitle={`${s.cls} ${s.section} · ${roomOf(s.name) ? 'Room ' + roomOf(s.name) : 'No room yet'}`} footer={<Button variant="outline" onClick={() => setSel(null)}>Close</Button>}>
         <div className="grid grid-cols-3 gap-2 mb-3">
@@ -30,8 +32,9 @@ export default function Inmates({ h }) {
           <Info l="Medical / allergies" v={s.health !== 'None' ? s.health : 'None'} /><Info l="Medication" v={s.medication || 'None'} /><Info l="Special needs" v={s.needs !== 'None' ? s.needs : 'None'} />
         </div>
         {rec?.notes && <div className="text-[12.5px] text-[#555] bg-[#FFFBEB] rounded-[6px] p-2.5 mb-3">📝 {rec.notes}</div>}
+        {(() => { const heads = h.feeHeads || DEFAULT_FEE_HEADS; return <div className="grid grid-cols-3 gap-2 mb-3">{heads.map(x => { const st = headStatus(db.payments, s.id, x); return <div key={x.id} className="bg-[#F8F8F8] rounded-[6px] p-2.5"><div className="text-[10px] font-bold text-[#AAA] uppercase tracking-wider mb-0.5">{x.name}{x.kind !== 'One-time fee' ? ' · held' : ''}</div><div className="text-[12.5px] font-semibold" style={{ color: st.balance ? '#DC2626' : '#166534' }}>{st.balance ? (st.paid ? `${fmt(st.paid)} of ${fmt(x.amount)}` : `Due ${fmt(x.amount)}`) : `✓ ${fmt(st.paid)}`}</div></div>; })}</div>; })()}
         <div className="text-[10.5px] font-bold text-[#AAA] uppercase tracking-wider mb-1.5">Hostel fee payments · {fmt(fee(s))} / month</div>
-        {!pays.length ? <div className="text-[12.5px] text-[#AAA]">No payments yet — collect from Hostel Fees.</div> : <div className="border border-[#E4E4E4] rounded-[8px] divide-y divide-[#E4E4E4]">{pays.map(p => <div key={p.id} className="flex items-center gap-3 px-3 py-2 text-[12.5px]"><span className="font-mono text-[11.5px] text-[#C8202E]">{p.id}</span><span className="flex-1 text-[#555]">{p.period ? monthName(p.period) : p.date}</span><span className="text-[#AAA]">{p.mode}</span><b className="font-mono text-[#166534]">{fmt(p.amount)}</b></div>)}</div>}
+        {!pays.length ? <div className="text-[12.5px] text-[#AAA]">No payments yet — collect from Hostel Fees.</div> : <div className="border border-[#E4E4E4] rounded-[8px] divide-y divide-[#E4E4E4]">{pays.map(p => <div key={p.id} className="flex items-center gap-3 px-3 py-2 text-[12.5px]"><span className="font-mono text-[11.5px] text-[#C8202E]">{p.id}</span><span className="flex-1 text-[#555]">{p.period ? monthName(p.period) : p.category}</span><span className="text-[#AAA]">{p.mode}</span><b className="font-mono text-[#166534]">{fmt(p.amount)}</b></div>)}</div>}
       </Modal>);
   })();
 

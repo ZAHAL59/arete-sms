@@ -6,7 +6,7 @@ import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
 import { Field, inputCls, Th } from '../../components/ui/Kit';
 import { COLORS } from '../teacher/constants';
-import { getStudentDue } from '../finance/constants';
+import { getStudentDue, paidTowardDue } from '../finance/constants';
 import { attendanceOf, classLabel, downloadCsv, fmt } from './constants';
 
 const GRADES = Array.from({ length: 12 }, (_, i) => `Grade ${i + 1}`);
@@ -14,7 +14,7 @@ const EDIT_FIELDS = [['Name', 'name'], ['Date of Birth', 'dob', 'date'], ['Paren
 
 export function studentStatus(s, fee) { return fee.bal > 0 ? 'Fee Pending' : s.status || 'Active'; }
 export function feeOf(s, payments) {
-  const due = getStudentDue(s), paid = payments.filter(p => p.studentId === s.id).reduce((a, p) => a + p.amount, 0);
+  const due = getStudentDue(s), paid = paidTowardDue(payments, s.id);
   return { due, paid, bal: Math.max(0, due - paid) };
 }
 

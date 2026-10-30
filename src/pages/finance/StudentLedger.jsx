@@ -3,7 +3,7 @@ import useStore from '../../store/useStore';
 import { PageHeader } from '../../components/Layout';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
-import { fmt, fmtL, getStudentDue } from './constants';
+import { fmt, fmtL, getStudentDue, countsTowardDue, paidTowardDue } from './constants';
 import PaymentModal from './modals/PaymentModal';
 import FeeStructureModal from './modals/FeeStructureModal';
 
@@ -22,7 +22,7 @@ export default function StudentLedger({ allPayments, recordPayment }) {
     const gm = !grade || s.cls===grade;
     if (!qm||!gm) return false;
     const due  = getStudentDue(s);
-    const paid = allPayments.filter(p=>p.studentId===s.id).reduce((a,p)=>a+p.amount,0);
+    const paid = paidTowardDue(allPayments, s.id);
     const bal  = due-paid;
     if (filter==='paid')    return bal<=0;
     if (filter==='partial') return paid>0&&bal>0;
@@ -32,7 +32,7 @@ export default function StudentLedger({ allPayments, recordPayment }) {
   });
 
   const totalDue  = db.students.reduce((a,s)=>a+getStudentDue(s),0);
-  const totalPaid = allPayments.filter(p=>p.studentId).reduce((a,p)=>a+p.amount,0);
+  const totalPaid = allPayments.filter(p=>p.studentId && countsTowardDue(p)).reduce((a,p)=>a+p.amount,0);
   const outstanding = Math.max(0,totalDue-totalPaid);
 
   return (
@@ -91,7 +91,7 @@ export default function StudentLedger({ allPayments, recordPayment }) {
               ? <tr><td colSpan={8} className="text-center py-10 text-[#AAA]">No students match</td></tr>
               : students.map(s=>{
                   const due  = getStudentDue(s);
-                  const paid = allPayments.filter(p=>p.studentId===s.id).reduce((a,p)=>a+p.amount,0);
+                  const paid = paidTowardDue(allPayments, s.id);
                   const bal  = due-paid;
                   const pct  = due>0?Math.round(paid/due*100):0;
                   const status = bal<=0?'Paid':paid>0?'Partial':'Pending';

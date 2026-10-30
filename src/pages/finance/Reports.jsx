@@ -3,7 +3,7 @@ import useStore from '../../store/useStore';
 import { PageHeader } from '../../components/Layout';
 import Button from '../../components/ui/Button';
 import { Field, inputCls } from '../../components/ui/Kit';
-import { fmt, getStudentDue, FEE_GRADES, FEE_CATEGORIES, PAY_MODES } from './constants';
+import { fmt, getStudentDue, countsTowardDue, FEE_GRADES, FEE_CATEGORIES, PAY_MODES } from './constants';
 import { csvText } from '../principal/constants';
 
 const iso = d => d.toISOString().slice(0, 10);
@@ -49,7 +49,7 @@ export function buildFeeReport(id, db, allPayments, o = {}) {
   const stu = sid => db.students.find(s => s.id === sid);
   const gradeOk = p => !o.grade || stu(p.studentId)?.cls === o.grade;
   const pays = allPayments.filter(p => p.studentId && inRange(p.date, range) && gradeOk(p) && (!o.mode || p.mode === o.mode) && (!o.category || p.category === o.category));
-  const toDate = allPayments.filter(p => p.studentId);
+  const toDate = allPayments.filter(p => p.studentId && countsTowardDue(p));
   const sum = l => l.reduce((a, p) => a + p.amount, 0);
   const total = sum(pays);
   const pct = n => total ? Math.round(n / total * 100) + '%' : '—';
@@ -70,7 +70,7 @@ export function buildFeeReport(id, db, allPayments, o = {}) {
   }
   if (id === 'grade') {
     const rows = FEE_GRADES.filter(g => !o.grade || g === o.grade).map(g => { const sts = db.students.filter(s => s.cls === g); if (!sts.length) return null;
-      const billed = sts.reduce((a, s) => a + getStudentDue(s), 0), inP = sum(allPayments.filter(p => p.studentId && inRange(p.date, range) && sts.some(s => s.id === p.studentId))), upTo = sum(toDate.filter(p => sts.some(s => s.id === p.studentId)));
+      const billed = sts.reduce((a, s) => a + getStudentDue(s), 0), inP = sum(allPayments.filter(p => p.studentId && countsTowardDue(p) && inRange(p.date, range) && sts.some(s => s.id === p.studentId))), upTo = sum(toDate.filter(p => sts.some(s => s.id === p.studentId)));
       return [g, sts.length, billed, inP, upTo, Math.max(0, billed - upTo), billed ? Math.round(upTo / billed * 100) + '%' : '—']; }).filter(Boolean);
     return { title: 'Grade-wise Collection', columns: ['Grade', 'Students', 'Annual billed (₹)', 'Collected in period (₹)', 'Collected to date (₹)', 'Balance today (₹)', 'Collected %'], rows, summary: { total: rows.reduce((a, r) => a + r[3], 0), count: rows.length } };
   }
@@ -80,7 +80,7 @@ export function buildFeeReport(id, db, allPayments, o = {}) {
     return { title: 'Outstanding Fees', columns: ['Student', 'Class', 'Annual due (₹)', 'Paid to date (₹)', 'Balance (₹)'], rows, summary: { total: owed, count: rows.length - 1, owed: true } };
   }
   if (id === 'ledger') {
-    const rows = db.students.filter(s => !o.grade || s.cls === o.grade).map(s => { const due = getStudentDue(s), inP = sum(allPayments.filter(p => p.studentId === s.id && inRange(p.date, range))), upTo = sum(toDate.filter(p => p.studentId === s.id));
+    const rows = db.students.filter(s => !o.grade || s.cls === o.grade).map(s => { const due = getStudentDue(s), inP = sum(allPayments.filter(p => p.studentId === s.id && countsTowardDue(p) && inRange(p.date, range))), upTo = sum(toDate.filter(p => p.studentId === s.id));
       return [s.id, s.name, `${s.cls} ${s.section}`, due, inP, upTo, Math.max(0, due - upTo), due - upTo <= 0 ? 'Clear' : upTo ? 'Partial' : 'Pending']; });
     return { title: 'Full Fee Ledger', columns: ['ID', 'Student', 'Class', 'Annual due (₹)', 'Paid in period (₹)', 'Paid to date (₹)', 'Balance (₹)', 'Status'], rows, summary: { total: rows.reduce((a, r) => a + r[4], 0), count: rows.length } };
   }

@@ -3,7 +3,7 @@ import useStore from '../../store/useStore';
 import { PageHeader } from '../../components/Layout';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
-import { fmt, fmtL, getStudentDue } from './constants';
+import { fmt, fmtL, getStudentDue, countsTowardDue } from './constants';
 import PaymentModal from './modals/PaymentModal';
 import ReceiptModal from './modals/ReceiptModal';
 
@@ -12,7 +12,8 @@ export default function FeeOverview({ allPayments, recordPayment }) {
   const [payOpen, setPayOpen] = useState(false); const [rcpt, setRcpt] = useState(null);
 
   const totalDue       = db.students.reduce((a,s) => a+getStudentDue(s), 0);
-  const totalCollected = allPayments.filter(p=>p.studentId).reduce((a,p)=>a+p.amount,0);
+  const totalCollected = allPayments.filter(p=>p.studentId && countsTowardDue(p)).reduce((a,p)=>a+p.amount,0);
+  const otherCollected = allPayments.filter(p=>p.studentId && !countsTowardDue(p)).reduce((a,p)=>a+p.amount,0);   // admission fees, deposits, advances
   const outstanding    = Math.max(0, totalDue - totalCollected);
 
   const byCategory = {};
@@ -58,7 +59,7 @@ export default function FeeOverview({ allPayments, recordPayment }) {
         <div className="h-3 bg-[#E4E4E4] rounded-full overflow-hidden">
           <div className="h-full bg-[#C8202E] rounded-full transition-all" style={{width:`${collPct}%`}}/>
         </div>
-        <div className="text-[11px] text-[#AAA] mt-1">{collPct}% collected · {fmtL(outstanding)} outstanding</div>
+        <div className="text-[11px] text-[#AAA] mt-1">{collPct}% collected · {fmtL(outstanding)} outstanding{otherCollected > 0 && <> · plus {fmt(otherCollected)} in admission fees, deposits and advances (not counted against annual fees)</>}</div>
       </div>
 
       {/* By category */}

@@ -4,15 +4,15 @@ import { PageHeader } from '../../components/Layout';
 import Badge from '../../components/ui/Badge';
 import Collapsible from '../../components/ui/Collapsible';
 import { Kpi, Th } from '../../components/ui/Kit';
-import { getStudentDue } from '../finance/constants';
+import { getStudentDue, countsTowardDue, paidTowardDue } from '../finance/constants';
 import { fmt } from './constants';
 
 export default function FinanceSummary() {
   const db = useStore(s => s.db);
   const [q, setQ] = useState('');
-  const paidBy = id => db.payments.filter(p => p.studentId === id).reduce((a, p) => a + p.amount, 0);
+  const paidBy = id => paidTowardDue(db.payments, id);
   const due = db.students.reduce((a, s) => a + getStudentDue(s), 0);
-  const collected = db.payments.filter(p => p.studentId).reduce((a, p) => a + p.amount, 0);
+  const collected = db.payments.filter(p => p.studentId && countsTowardDue(p)).reduce((a, p) => a + p.amount, 0);
   const payroll = db.staff.reduce((a, s) => a + s.salary, 0);
   const students = db.students.filter(s => !q || s.name.toLowerCase().includes(q.toLowerCase())).slice(0, 15);
   const L = n => '₹' + (Math.round(n / 100000 * 10) / 10) + 'L';

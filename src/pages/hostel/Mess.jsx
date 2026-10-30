@@ -10,28 +10,18 @@ import { Kpi, Field, inputCls, Th } from './ui';
 import { MONTHLY_FEE, fmt, TODAY, STOCK_CATS, STOCK_UNITS } from './constants';
 import { getFeeStructure } from '../finance/constants';
 
-export default function Mess({ h, logCost, saveStock, addStock, addOrder, receiveOrder }) {
+export default function Mess({ h, saveStock, addStock, addOrder, receiveOrder }) {
   const db = useStore(s => s.db);
-  const [date, setDate] = useState(TODAY);
-  const [amt, setAmt] = useState('');
   const [edit, setEdit] = useState(null);
   const [form, setForm] = useState({});
   const [procure, setProcure] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [nw, setNw] = useState({ item:'', unit:'kg', qty:'', max:'', low:'', cost:'', cat:STOCK_CATS[0], supplier:'' });
 
-  const boarders = db.students.filter(s => s.boarding).length || 1;
-  const monthlyBudget = db.students.filter(s => s.boarding).reduce((a, s) => a + Math.round((getFeeStructure()[s.cls]?.hostel || MONTHLY_FEE * 12) / 12), 0) || MONTHLY_FEE;
-  const now = new Date();
-  const spent = h.costLog.filter(l => new Date(l.date).getMonth() === now.getMonth()).reduce((a, l) => a + l.amount, 0);
-  const projected = Math.round(spent / Math.max(1, now.getDate()) * 30);
-  const util = monthlyBudget ? Math.round(spent / monthlyBudget * 100) : 0;
+  const stockValue = h.stock.reduce((a, s) => a + s.qty * s.cost, 0);
+  const openOrders = (h.orders || []).filter(o => o.status === 'Ordered').length;
   const low = h.stock.filter(s => s.qty <= s.low);
 
-  function submitCost() {
-    const n = parseInt(amt); if (!n) return;
-    logCost(date, n); setAmt('');
-  }
   function openEdit(s) { setEdit(s); setForm({ qty:String(s.qty), max:String(s.max), low:String(s.low), cost:String(s.cost) }); }
   function saveEdit() {
     saveStock(edit.item, { qty:+form.qty||0, max:+form.max||0, low:+form.low||0, cost:+form.cost||0 });
@@ -45,17 +35,17 @@ export default function Mess({ h, logCost, saveStock, addStock, addOrder, receiv
 
   return (
     <div className="p-6">
-      <PageHeader title="Mess Management" subtitle="Stock, daily cost and procurement"
+      <PageHeader title="Mess Management" subtitle="Kitchen stock and procurement orders"
         actions={<>
           <Button variant="outline" onClick={() => setAddOpen(true)}>+ Add Item</Button>
           <Button onClick={() => setProcure(true)}>Generate Procurement Order</Button>
         </>} />
 
       <div className="grid grid-cols-4 gap-3 mb-5">
-        <Kpi label="Monthly Budget" value={fmt(monthlyBudget)} note={`${boarders} boarders · from fee structure`} />
-        <Kpi label="Spent So Far" value={fmt(spent)} note={`${util}% of budget`} color={util > 90 ? '#DC2626' : '#1A5FB4'} />
-        <Kpi label="Projected" value={fmt(projected)} note="At current daily rate" color={projected > monthlyBudget ? '#DC2626' : '#166534'} />
+        <Kpi label="Items in Stock" value={h.stock.length} note="Tracked kitchen items" />
         <Kpi label="Low Stock" value={low.length} note="Items to reorder" color={low.length ? '#DC2626' : '#166534'} />
+        <Kpi label="Stock Value" value={fmt(stockValue)} note="Quantity × unit cost" color="#1A5FB4" />
+        <Kpi label="Open Orders" value={openOrders} note="Placed, not yet received" color={openOrders ? '#B45309' : '#166534'} />
       </div>
 
       <Collapsible defaultOpen className="mb-3" header={<span className="text-[13.5px] font-bold text-[#111]">📦 Stock Levels</span>}>
@@ -84,23 +74,6 @@ export default function Mess({ h, logCost, saveStock, addStock, addOrder, receiv
         </table>
       </Collapsible>
 
-      <Collapsible defaultOpen className="mb-3" header={<span className="text-[13.5px] font-bold text-[#111]">🧾 Daily Cost Log</span>}>
-        <div className="p-4 border-t border-[#E4E4E4]">
-          <div className="flex gap-2 mb-3 items-end">
-            <Field label="Date"><input type="date" value={date} onChange={e => setDate(e.target.value)} className={inputCls} /></Field>
-            <Field label="Amount (₹)"><input type="number" value={amt} onChange={e => setAmt(e.target.value)} className={inputCls} placeholder="Spent today" /></Field>
-            <Button onClick={submitCost}>Log Cost</Button>
-          </div>
-          <div className="divide-y divide-[#E4E4E4] border border-[#E4E4E4] rounded-[8px]">
-            {h.costLog.slice(0, 8).map((l, i) => (
-              <div key={i} className="flex justify-between px-3 py-2 text-[12.5px]">
-                <span className="text-[#555]">{l.date} · {l.by}</span>
-                <span className="font-mono font-bold text-[#111]">{fmt(l.amount)}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </Collapsible>
 
       <Collapsible className="mb-3" header={<span className="text-[13.5px] font-bold text-[#111]">📦 Procurement Orders ({(h.orders || []).length})</span>}>
         <div className="border-t border-[#E4E4E4] divide-y divide-[#E4E4E4]">{!(h.orders || []).length && <div className="p-4 text-[13px] text-[#AAA]">No orders yet — generate one from low-stock items.</div>}{(h.orders || []).map(o => (

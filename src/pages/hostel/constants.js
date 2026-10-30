@@ -3,6 +3,15 @@ export const HOSTEL_KEY = 'ARETE_HOSTEL_v1';
 export const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 export const MONTHLY_FEE = 3500;
 
+// One-time charges at admission. Amounts are starting values — edit them under Hostel Fees → Fee structure.
+export const DEFAULT_FEE_HEADS = [
+  { id: 'adm',     name: 'Hostel Admission Fee', amount: 5000,  kind: 'One-time fee' },
+  { id: 'caution', name: 'Caution Deposit',      amount: 10000, kind: 'Refundable deposit' },
+  { id: 'mess',    name: 'Mess Advance',         amount: 5000,  kind: 'Advance' },
+];
+export const HEAD_KINDS = ['One-time fee', 'Refundable deposit', 'Advance'];
+export const HOSTEL_DUE_DAY = 10;                       // monthly fee is due by the 10th
+
 export const SEED = {
   rooms: [
     {id:'H-101',capacity:4,inmates:['Devika Nair','Ananya R.','Fathima Z.','Sreya M.'],type:'Girls'},
@@ -43,6 +52,7 @@ export const SEED = {
   },
   orders: [],
   admissions: [],   // hostel admission records (one per student)
+  feeHeads: DEFAULT_FEE_HEADS,
   incidents: [
     {id:'INC001',date:'2026-10-15 21:30',stuName:'Mohammed Ashiq',cls:'Grade 7',type:'Health',desc:'Student complained of fever and stomach ache after dinner. Temperature: 38.4°C.',action:'Paracetamol given. Parents informed. Dr. Rajan consulted over phone. Student resting in sick room.',by:'Muhd Zahal (Warden)',status:'Resolved'},
     {id:'INC002',date:'2026-10-12 19:00',stuName:'Arjun Menon',cls:'Grade 9',type:'Behavioural',desc:'Argument with roommate over phone usage. Raised voice and minor push incident.',action:'Both students counselled. Room rules reminder. Parents to be informed at next meeting.',by:'Muhd Zahal (Warden)',status:'Open'},

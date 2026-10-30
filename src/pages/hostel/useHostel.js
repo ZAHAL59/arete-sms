@@ -23,6 +23,7 @@ export default function useHostel() {
       d.admissions = [{ ...rec, id: 'HA' + Date.now().toString().slice(-6), roomId }, ...(d.admissions || []).filter(a => a.studentId !== rec.studentId)];
       return d;
     }),
+    setFeeHeads: list => update(d => { d.feeHeads = list; return d; }),
     removeInmate: (roomId, name) => update(d => {
       const r = d.rooms.find(x => x.id === roomId);
       if (r) r.inmates = r.inmates.filter(n => n !== name);

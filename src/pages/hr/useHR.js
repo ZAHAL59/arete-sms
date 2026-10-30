@@ -73,6 +73,7 @@ export default function useHR() {
         db.staff.push({ id: staffId, name: h.name, subj: h.post, dept: h.dept, joined: h.joinDate, phone: h.phone, email: h.email, salary: h.salary, status: 'Active', classes: [], hiredFrom: 'Recruitment · ' + candId }); return db; });
       update(d => {
         const c = d.candidates.find(x => x.id === candId); if (!c) return d;
+        const app = (d.applications || []).find(x => x.id === c.appId); if (app) app.hrStatus = 'Hired';
         c.status = 'Hired'; c.hired = true; c.hiredAs = { staffId, post: h.post, salary: h.salary, joinDate: h.joinDate };
         c.offerLetter = { name: c.name, post: h.post, dept: h.dept, salary: h.salary, joinDate: h.joinDate, phone: h.phone, email: h.email, vacId: c.vacId,
           refNo: 'AMS/HR/OL/' + new Date().getFullYear() + '/' + String(Date.now()).slice(-4), issuedDate: new Date().toISOString().slice(0, 10) };

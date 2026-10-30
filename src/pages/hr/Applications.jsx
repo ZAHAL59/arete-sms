@@ -13,7 +13,9 @@ const dateFmt = iso => iso ? new Date(iso).toLocaleDateString('en-IN', { day: '2
 export default function Applications({ hr, shortlist, reject, restore, markInviteSent, initialVac = '' }) {
   const [vac, setVac] = useState(initialVac); const [st, setSt] = useState('');
   const [invite, setInvite] = useState(null); const [msg, setMsg] = useState(''); const [copied, setCopied] = useState(false);
-  const apps = (hr.applications || []).slice().sort((a, b) => (b.appliedAt || '').localeCompare(a.appliedAt || ''));
+  // An application leaves the inbox once the person has been interviewed or hired — from then on they live under Interviews
+  const leftInbox = a => { const c = hr.candidates.find(x => x.appId === a.id); return a.hrStatus === 'Hired' || (!!c && (c.hired || hr.interviews.some(i => i.candId === c.id && i.status === 'Completed'))); };
+  const apps = (hr.applications || []).filter(a => !leftInbox(a)).slice().sort((a, b) => (b.appliedAt || '').localeCompare(a.appliedAt || ''));
   const list = apps.filter(a => (!vac || a.vacId === vac) && (!st || a.hrStatus === st));
   const vacancy = id => hr.vacancies.find(v => v.id === id) || { subj: id, qual: '—', exp: '—' };
     const groups = Object.entries(list.reduce((m, a) => ((m[a.vacId] ||= []).push(a), m), {}));
@@ -34,8 +36,8 @@ export default function Applications({ hr, shortlist, reject, restore, markInvit
       </div>
 
       {!list.length && <div className="bg-white border border-[#E4E4E4] rounded-[10px] text-center py-16 px-6">
-        <div className="text-[40px] mb-3">📭</div><div className="text-[16px] font-bold text-[#555] mb-1">{apps.length ? 'No applications match' : 'No applications yet'}</div>
-        <div className="text-[13.5px] text-[#AAA] mb-5">{apps.length ? 'Try a different vacancy or status.' : 'Post a vacancy and share the careers page link with candidates.'}</div>
+        <div className="text-[40px] mb-3">📭</div><div className="text-[16px] font-bold text-[#555] mb-1">{apps.length ? 'No applications match' : (hr.applications || []).length ? 'Nothing waiting for review' : 'No applications yet'}</div>
+        <div className="text-[13.5px] text-[#AAA] mb-5">{apps.length ? 'Try a different vacancy or status.' : (hr.applications || []).length ? 'Interviewed and hired candidates move to the Interviews page.' : 'Post a vacancy and share the careers page link with candidates.'}</div>
 </div>}
 
       {groups.map(([vid, items]) => {
